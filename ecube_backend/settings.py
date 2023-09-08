@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+from dotenv import load_dotenv
+import os
+# Load environment variables from .env file
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -37,13 +40,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'register_student',
+    'client_auth'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -74,13 +80,19 @@ WSGI_APPLICATION = 'ecube_backend.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+  'default': {
+    'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    'NAME': 'ecube',
+    'USER': 'postgres',
+    'PASSWORD': 'root',
+    'HOST': 'localhost',
+    'PORT': '5432',  # Use the correct PostgreSQL port number
+  }
 }
 
-
+# Token expiration times in minutes
+ACCESS_TOKEN_EXPIRATION = 60  # Adjust as needed
+REFRESH_TOKEN_EXPIRATION = 1440  # Adjust as needed
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -99,7 +111,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+os.environ['AWS_ACCESS_KEY_ID'] = 'AKIA47LB3TDRGNBRHDCK'
+os.environ['AWS_SECRET_ACCESS_KEY'] = '9DGM+wRJqzXWszm6v+KDlLtJL4tqLEZa/m+n42l5'
+os.environ['AWS_DEFAULT_REGION'] = 'ap-south-1'  # Change this to your desired region
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
