@@ -21,7 +21,16 @@ class TokenUtil:
         Token.objects.create(user=user, access_token=access_token, refresh_token=refresh_token)
         
         return access_token, refresh_token
-
+    
+    @staticmethod
+    def validate_access_token(access_token):
+        # Check if tokens already exist for the user
+        existing_tokens = Token.objects.filter(access_token=access_token).first()
+        if existing_tokens:
+            return existing_tokens.access_token
+        else:
+            return False
+        
     @staticmethod
     def generate_access_token(user):
         payload = {
@@ -106,7 +115,13 @@ class TokenUtil:
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             return payload
-        except (jwt.ExpiredSignatureError, jwt.DecodeError):
+        except jwt.ExpiredSignatureError as e:
+            # Token has expired, but we can still attempt to decode it for user information
+            print(f"Token expired: {e}")
+            return None
+        except jwt.DecodeError as e:
+            # Token decoding error
+            print(f"Token decoding error: {e}")
             return None
         
         

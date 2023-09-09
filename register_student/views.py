@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
-from .models import Student, className, division, subjects, batchYear
-from .serializers import StudentSerializer, classNameSerializer, divisionSerializer, subjectsSerializer, batchYearSerializer
+from .models import Student, className, division, subjects, batchYear, table_names, create_tables
+from .serializers import StudentSerializer, classNameSerializer, divisionSerializer, subjectsSerializer, batchYearSerializer, table_namesSerializer
 import pandas as pd
 
 class StudentMethods(APIView):
@@ -56,8 +56,33 @@ class StudentBulkMethods(APIView):
                 data = pd.read_excel(file_obj)
             else:
                 return Response({'message': 'Unsupported file format'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            data['class_name']= data['class_name'].str.replace(' ', '').str.lower()
+            data['division']= data['division'].str.replace(' ', '').str.lower()
+            
+                    # Group the data by the specified columns and iterate through unique combinations
+            unique_combinations = data.groupby(['batch_year', 'class_name', 'division']).size().reset_index()
 
-            # Convert the data to Student model instances
+            for _, row in unique_combinations.iterrows():
+                batch_year = row['batch_year']
+                class_name = row['class_name']
+                division = row['division']
+                
+                table_name = f"{batch_year}_{class_name}_{division}"
+                
+                result_table_name = table_names.objects.filter(table_name=table_name)
+                
+                if not result_table_name:
+                    table_serializer = table_namesSerializer(data={'table_name':table_name})
+                    
+                    if table_serializer.is_valid():
+                        table_serializer.save()
+                        
+                        create_tables(table_name)
+            
+                    else:
+                        return Response({'message': 'Table name not saved'}, status=status.HTTP_400_BAD_REQUEST)
+                    
             serializer = StudentSerializer(data=data.to_dict(orient='records'), many=True)
 
             if serializer.is_valid():
@@ -69,7 +94,7 @@ class StudentBulkMethods(APIView):
                 #file_obj.delete()  # Delete the file from the server
 
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+                
         return Response({'message': 'Invalid file format or data'}, status=status.HTTP_400_BAD_REQUEST)
     
     def get(self, request):
