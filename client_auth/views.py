@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework import status
 from django.http import JsonResponse
 from register_student.models import Student
 from datetime import datetime, timedelta
@@ -51,13 +52,13 @@ class SendOTP(APIView):
                     return JsonResponse({'message': 'OTP sent successfully'})
                 else:
                     print('Failed to send OTP')
-                    return JsonResponse({'message': 'Failed to send OTP'}, status=500)
+                    return JsonResponse({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
             except Exception as e:
                 print(e)
-                return JsonResponse({'message': 'Failed to send OTP'}, status=500)
+                return JsonResponse({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
-            return JsonResponse({'message': 'Invalid phone_number'}, status=400)
+            return JsonResponse({'message': 'Invalid phone_number'}, status=status.HTTP_400_BAD_REQUEST)
         
         
         
@@ -90,19 +91,19 @@ class VerifyOTP(APIView):
 
         # Validate tokens
                     if TokenUtil.validate_tokens(access_token, refresh_token):
-                        return JsonResponse({'access_token': access_token, 'refresh_token': refresh_token}, status=200)
+                        return JsonResponse({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
                     else:
-                        return JsonResponse({'error': 'Invalid tokens.'}, status=401)
+                        return JsonResponse({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
                 else:
                     # Invalid OTP
-                    return JsonResponse({'message': 'Invalid OTP'}, status=400)
+                    return JsonResponse({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # OTP has expired
                 request.session.pop('otp', None)
-                return JsonResponse({'message': 'OTP has expired'}, status=400)
+                return JsonResponse({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Session data for OTP not found
-            return JsonResponse({'message': 'Session data for OTP not found'}, status=400)
+            return JsonResponse({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
         
 class ValidateTokenView(APIView):
     def post(self, request):
@@ -152,13 +153,13 @@ class RequestAccessToken(APIView):
         refresh_token_payload = TokenUtil.decode_token(refresh_token)
         
         if not refresh_token_payload:
-            return JsonResponse({'error': 'Invalid refresh token or expired refresh token.'}, status=401)
+            return JsonResponse({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Check if the refresh token is associated with a user (add your logic here)
         user_id = refresh_token_payload.get('id')
         
         if not user_id:
-            return JsonResponse({'error': 'The refresh token is not associated with a user.'}, status=401)
+            return JsonResponse({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Generate a new access token
         user = Student.objects.get(id=user_id)
@@ -166,14 +167,14 @@ class RequestAccessToken(APIView):
         access_token = TokenUtil.generate_access_token(user)
         
         if TokenUtil.validate_access_token(access_token):
-            return JsonResponse({'error': 'Failed to generate access token.'}, status=500)
+            return JsonResponse({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             
             user_token = Token.objects.get(refresh_token=refresh_token)
             user_token.access_token = access_token
             user_token.save()
             
-            return JsonResponse({'access_token': access_token}, status=200)
+            return JsonResponse({'access_token': access_token}, status=status.HTTP_200_OK)
     
 class LogoutView(APIView):
     def dispatch(self, *args, **kwargs):
@@ -184,12 +185,12 @@ class LogoutView(APIView):
         access_token = request.data.get('access_token')
 
         if not access_token:
-            return JsonResponse({'error': 'Access token is required.'}, status=400)
+            return JsonResponse({'error': 'Access token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if TokenUtil.is_token_valid(access_token):
             TokenUtil.blacklist_token(access_token)
             
-            return JsonResponse({'message': 'Logout successful.'}, status=200)
+            return JsonResponse({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
         else:
-            return JsonResponse({'message': 'Invalid access token or expired access token'}, status=401)
+            return JsonResponse({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
 

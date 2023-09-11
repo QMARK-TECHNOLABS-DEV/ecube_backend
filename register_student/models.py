@@ -1,4 +1,4 @@
-from django.db import models, migrations
+from django.db import models, connection
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 
@@ -16,92 +16,68 @@ class Student(models.Model):
 class ExamResults(models.Model):
     admission_no = models.CharField(max_length=20)  # Specify the max_length
     exam_name = models.CharField(max_length=100)     # Specify the max_length
-    physics = models.IntegerField()
-    chemistry = models.IntegerField()
-    maths = models.IntegerField()
+    physics = models.IntegerField(null=True, blank=True)
+    chemistry = models.IntegerField(null=True, blank=True)
+    maths = models.IntegerField(null=True, blank=True)
     
     
 class LeaderBoard(models.Model):    
     admission_no = models.CharField()
-    physics = models.IntegerField()
-    chemistry = models.IntegerField()
-    maths = models.IntegerField()
+    physics = models.IntegerField(null=True, blank=True)
+    chemistry = models.IntegerField(null=True, blank=True)
+    maths = models.IntegerField(null=True, blank=True)
     
 class Attendance(models.Model):
     admission_no = models.CharField()
     month_year_number = models.CharField() # 8/2021
-    date = models.DateField()
+    date = models.CharField()
     status = models.CharField()
 
 class DailyUpdates(models.Model):
     admission_no = models.CharField()
-    date = models.DateField()
-    on_time = models.BooleanField()
-    voice = models.BooleanField()
-    nb_sub = models.BooleanField()
-    mob_net = models.BooleanField()
-    camera = models.BooleanField()
-    full_class = models.BooleanField()
-    activites = models.CharField()
-    engagement = models.CharField()
+    date = models.CharField()
+    on_time = models.BooleanField(default=True)
+    voice = models.BooleanField(default=True)
+    nb_sub = models.BooleanField(default=True)
+    mob_net = models.BooleanField(default=True)
+    camera = models.BooleanField(default=True)
+    full_class = models.BooleanField(default=True)
+    activities = models.CharField(null=True, blank=True)
+    engagement = models.BooleanField(default=True)
+    overall_performance_percentage = models.FloatField(null=True, blank=True)
+    overall_performance = models.CharField(null=True, blank=True)
+    remarks = models.TextField(null=True, blank=True)
     
     
-def create_dynamic_model(model_name, base_model_class):
-    # Check if the model already exists
-    if model_name in apps.all_models['register_student']:
-        return apps.get_model('register_student', model_name)
+def create_dynamic_models(model_names):
+    base_models = [ExamResults, LeaderBoard, Attendance, DailyUpdates]
 
-    # Get the fields from the base model (Student)
-    base_model_fields = base_model_class._meta.fields
+    for base_model, new_model_name in zip(base_models, model_names):
+        # Check if the new model name is a valid identifier
+        if not new_model_name.isidentifier():
+            print(f"Invalid model name: {new_model_name}")
+            continue
 
-    # Define the new model class with the provided name
-    class Meta:
-        verbose_name = model_name  # Set a user-friendly name
+        app_label = base_model._meta.app_label
 
-    attrs = {
-        '__module__': __name__,
-        'Meta': Meta,
-    }
+        # Create a dictionary of field names and their corresponding field objects
+        fields = {
+            field.name: field.clone() for field in base_model._meta.fields
+        }
 
-    # Create a list of field instances for the new model
-    dynamic_fields = []
-    for field in base_model_fields:
-        # Exclude BigAutoField from dynamic model
-        if not isinstance(field, models.BigAutoField):
-            # Clone the field and add it to the list of dynamic fields
-            dynamic_field = field.clone()
-            dynamic_fields.append(dynamic_field)
+        fields['__module__'] = app_label
 
-            # Add the dynamic field to the attrs dictionary
-            attrs[field.name] = dynamic_field
+        # Create the dynamic model class
+        dynamic_model = type(new_model_name, (models.Model,), fields)
 
-    # Create the dynamic model class
-    CustomModel = type(model_name, (models.Model,), attrs)
+        # Create the database table for the dynamic model
+        with connection.schema_editor() as schema_editor:
+            schema_editor.create_model(dynamic_model)
 
-    # Register the dynamic model in Django's app registry
-    apps.register_model('register_student', CustomModel)
 
-    # Create a migration operation to create the dynamic model
-    migration = migrations.CreateModel(
-        name=model_name,
-        fields=dynamic_fields,  # Use the list of field instances
-        options={'verbose_name': model_name},
-    )
-
-    # Apply the migration
-    migration.apply(
-        database='default',
-        project_state=migrations.state.ProjectState.from_apps(apps),
-    )
-
-    return CustomModel
-
-def create_tables(unique_table_names):
-    create_dynamic_model(unique_table_names+'_exam_results', ExamResults)
-    create_dynamic_model(unique_table_names+'_leader_board', LeaderBoard)
-    create_dynamic_model(unique_table_names+'_attendance', Attendance)
-    create_dynamic_model(unique_table_names+'_daily_updates', DailyUpdates)
-    
+def create_tables(app_name,unique_table_names):
+    model_names = [app_name + unique_table_names+'_examResults', app_name+unique_table_names+'_leaderBoard', app_name+unique_table_names+'_attendance',app_name + unique_table_names+'_dailyUpdates']
+    create_dynamic_models(model_names)
 class className(models.Model):
     class_name = models.CharField(max_length=10)
 

@@ -22,4 +22,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('register/admin/', include('register_student.urls')),
     path('client_auth/', include('client_auth.urls')),
+    path('student_attendance/', include('student_attendance.urls')),
+    path('student_exam_result/', include('student_exam_result.urls')),
+    path('student_leaderboard/', include('student_leaderboard.urls')),
+    path('student_daily_activities/', include('student_daily_activities.urls')),
+    path('student_dashboard/', include('student_dashboard.urls')),
 ]

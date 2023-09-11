@@ -42,7 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'register_student',
-    'client_auth'
+    'client_auth',
+    'student_attendance',
+    'student_exam_result',
+    'student_leaderboard',
+    'student_daily_activities'
 ]
 
 MIDDLEWARE = [
@@ -92,7 +96,7 @@ DATABASES = {
 
 # Token expiration times in minutes
 ACCESS_TOKEN_EXPIRATION = 120 # Adjust as needed
-REFRESH_TOKEN_EXPIRATION = 80640  # Adjust as needed
+REFRESH_TOKEN_EXPIRATION = 403200 # Adjust as needed
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 

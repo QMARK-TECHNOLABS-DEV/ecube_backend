@@ -66,19 +66,53 @@ class StudentBulkMethods(APIView):
             for _, row in unique_combinations.iterrows():
                 batch_year = row['batch_year']
                 class_name = row['class_name']
-                division = row['division']
+                division_name = row['division']
                 
-                table_name = f"{batch_year}_{class_name}_{division}"
+                table_name = f"{batch_year}_{class_name}_{division_name}"
                 
                 result_table_name = table_names.objects.filter(table_name=table_name)
                 
                 if not result_table_name:
                     table_serializer = table_namesSerializer(data={'table_name':table_name})
                     
-                    if table_serializer.is_valid():
-                        table_serializer.save()
+                    class_serializer = classNameSerializer(data={'class_name':class_name})
+                    
+                    division_serializer = divisionSerializer(data={'division_name':division_name})
+                    
+                    batch_year_serializer = batchYearSerializer(data={'batch_year':batch_year})
+                    
+                    
+        
+                    if class_serializer.is_valid():
                         
-                        create_tables(table_name)
+                        if className.objects.filter(class_name=class_name).exists():
+                            pass
+                        else:
+                            class_serializer.save()
+                            
+                        
+                    if division_serializer.is_valid():
+                            
+                        if division.objects.filter(division_name=division_name).exists():
+                            pass
+                        else:
+                            division_serializer.save()
+                           
+                        
+                    if batch_year_serializer.is_valid():
+                        
+                        if batchYear.objects.filter(batch_year=batch_year).exists():
+                            pass
+                        else:
+                            batch_year_serializer.save()
+                            
+                        
+                    
+                    if table_serializer.is_valid():
+                        
+                        table_serializer.save()
+                        app_name = 'register_student_'
+                        create_tables(app_name,table_name)
             
                     else:
                         return Response({'message': 'Table name not saved'}, status=status.HTTP_400_BAD_REQUEST)
@@ -179,7 +213,7 @@ class divisionMethods(APIView):
             
             return Response({'Message': 'Record does not  exist'},status=status.HTTP_400_BAD_REQUEST)
         
-        
+
 class subjectMethods(APIView):
     def post(self,request):
         serializer = subjectsSerializer(data=request.data)
