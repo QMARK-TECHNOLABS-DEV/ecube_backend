@@ -32,7 +32,7 @@ class GetLeaderBoard(APIView):
         user_id = payload.get('id')
         
         if not user_id:
-            return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'The access token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
         # Generate a new access token
         user = Student.objects.get(id=user_id) 
         

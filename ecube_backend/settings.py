@@ -86,10 +86,10 @@ WSGI_APPLICATION = 'ecube_backend.wsgi.application'
 DATABASES = {
   'default': {
     'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    'NAME': 'ecube',
-    'USER': 'postgres',
-    'PASSWORD': 'root',
-    'HOST': 'localhost',
+    'NAME': 'ecubeBackend',
+    'USER': 'mysuperuser',
+    'PASSWORD': 'mysuperuser',
+    'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
     'PORT': '5432',  # Use the correct PostgreSQL port number
   }
 }
