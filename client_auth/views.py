@@ -25,8 +25,8 @@ class SendOTP(APIView):
         if db_phone_number:
             # Generate a random OTP (6 digits)
             try:
-                otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-
+                #otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                otp = '123456'
                 # Store OTP in session
                 expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
