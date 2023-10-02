@@ -12,6 +12,7 @@ class Student(models.Model):
     division = models.CharField(max_length=1)
     subjects = models.TextField()
     school_name = models.TextField()
+    email_id = models.TextField(default='')
 
 class ExamResults(models.Model):
     admission_no = models.CharField(max_length=20)  # Specify the max_length

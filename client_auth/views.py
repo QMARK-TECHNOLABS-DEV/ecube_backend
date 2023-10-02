@@ -28,28 +28,29 @@ class SendOTP(APIView):
                 #otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
                 otp = '123456'
                 # Store OTP in session
-                expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+                # expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
-                request.session['otp'] = {
-                    'phone_number': phone_number,
-                    'code': otp,
-                    'expiry': expiry_time
-                }
+                # request.session['otp'] = {
+                #     'phone_number': phone_number,
+                #     'code': otp,
+                #     'expiry': expiry_time
+                # }
 
-                # Initialize the Amazon SNS client
-                client = boto3.client("sns")
+                # # Initialize the Amazon SNS client
+                # client = boto3.client("sns")
                 
-                phone_number = '+91' + phone_number
-                # Send the OTP via SMS
-                response = client.publish(
-                    PhoneNumber=phone_number,
-                    Message=f'Your OTP is: {otp}',
-                )
+                # phone_number = '+91' + phone_number
+                # # Send the OTP via SMS
+                # response = client.publish(
+                #     PhoneNumber=phone_number,
+                #     Message=f'Your OTP is: {otp}',
+                # )
 
                 # Check the response
-                if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                if otp:
                     print(f'OTP sent successfully to {phone_number}')
-                    return JsonResponse({'message': 'OTP sent successfully'})
+                    return JsonResponse({'message': 'OTP sent successfully', 'otp': otp})
                 else:
                     print('Failed to send OTP')
                     return JsonResponse({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
