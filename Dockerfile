@@ -5,10 +5,12 @@ RUN pip install --upgrade setuptools
 RUN apt-get update && apt-get install -y libpq-dev && apt-get install python3-psycopg2 -y
 
 # Set the working directory
-WORKDIR /app  # Change this to /app to match the copied directory
+WORKDIR /app  
 
 # Copy your application code into the container
+
 COPY requirements.txt /app/requirements.txt
+
 RUN pip cache purge
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
