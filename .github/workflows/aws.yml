@@ -1,10 +1,11 @@
 name: Deploy image to AWS ECR
 
 # Run this workflow every time a new tag is created
-on: 
-  create:
-    tags:
-      - .*
+on:
+  push:
+    branches:
+      - main
+      
 jobs:
   ecr:
     # Name the Job
