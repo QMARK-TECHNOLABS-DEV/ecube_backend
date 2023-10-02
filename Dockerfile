@@ -8,10 +8,10 @@ RUN apt-get update && apt-get install -y libpq-dev &&  apt-get install python3-p
 WORKDIR /ecube_backend
 
 # Copy your application code into the container
-COPY . .
+COPY requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies
-RUN pip install -r requirements.txt
 
 # copy project
 COPY . .
