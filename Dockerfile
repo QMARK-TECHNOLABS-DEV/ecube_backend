@@ -2,7 +2,7 @@ FROM python:3.11.4-slim-buster
 
 RUN pip install --upgrade setuptools
 # Install PostgreSQL development files
-RUN apt-get update && apt-get install -y libpq-dev
+RUN apt-get update && apt-get install -y libpq-dev &&  apt-get install python3-psycopg2 -y
 
 # Set the working directory
 WORKDIR /ecube_backend
