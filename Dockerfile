@@ -9,6 +9,7 @@ WORKDIR /ecube_backend
 
 # Copy your application code into the container
 COPY requirements.txt /app/requirements.txt
+RUN pip cache purge
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
