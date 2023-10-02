@@ -11,7 +11,7 @@ WORKDIR /ecube_backend
 COPY requirements.txt /app/requirements.txt
 RUN pip cache purge
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 
 # copy project
