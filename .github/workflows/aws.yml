@@ -42,7 +42,7 @@ jobs:
           ECR_REPOSITORY: demo
           IMAGE_TAG: ${{ steps.tag-number.outputs.tag }}
         run: |
-          docker build -t demo .
-          docker tag demo:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker build -t ecube .
+          docker tag ecube:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
