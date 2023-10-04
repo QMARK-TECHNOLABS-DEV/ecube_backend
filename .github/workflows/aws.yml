@@ -1,3 +1,4 @@
+
 name: Deploy image to AWS ECR
 
 # Run this workflow every time a new tag is created
@@ -47,3 +48,24 @@ jobs:
           docker tag ecube:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
+  ecs-deploy:
+    name: Deploy image to AWS ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials (if not already configured)
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Update AWS CLI to the latest version
+        run: pip install --upgrade awscli
+
+      - name: Deploy to AWS ECS
+        run: |
+          aws ecs update-service \
+            --cluster YOUR_ECS_CLUSTER_NAME \
+            --service YOUR_ECS_SERVICE_NAME \
+            --force-new-deployment
