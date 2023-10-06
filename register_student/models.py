@@ -2,17 +2,25 @@ from django.db import models, connection
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 
+
+class class_details(models.Model):
+    class_name = models.CharField(max_length=10)
+    division = models.CharField(max_length=1)
+    subjects = models.TextField(default='')
+    batch_year = models.TextField(null=False, blank=False,default=0)
 class Student(models.Model):
 
     name = models.TextField()
     admission_no = models.CharField()
     phone_no = models.CharField(max_length=10,primary_key=False)
     batch_year = models.TextField(null=False, blank=False,default=0)
-    class_name = models.CharField()
+    class_name = models.CharField(max_length=10)
     division = models.CharField(max_length=1)
     subjects = models.TextField()
+    class_group = models.ForeignKey(class_details, on_delete=models.CASCADE, null=True, blank=True)
     school_name = models.TextField()
     email_id = models.TextField(default='')
+    logged_in = models.BooleanField(default=False)
 
 class ExamResults(models.Model):
     admission_no = models.CharField(max_length=20)  # Specify the max_length
@@ -79,6 +87,7 @@ def create_dynamic_models(model_names):
 def create_tables(app_name,unique_table_names):
     model_names = [app_name + unique_table_names+'_examResults', app_name+unique_table_names+'_leaderBoard', app_name+unique_table_names+'_attendance',app_name + unique_table_names+'_dailyUpdates']
     create_dynamic_models(model_names)
+    
 class className(models.Model):
     class_name = models.CharField(max_length=10)
 
@@ -90,6 +99,8 @@ class subjects(models.Model):
     
 class batchYear(models.Model):
     batch_year = models.TextField(null=False, blank=False,default=0)
+
+
     
 class table_names(models.Model):
     table_name = models.TextField(null=False, blank=False,default=0)

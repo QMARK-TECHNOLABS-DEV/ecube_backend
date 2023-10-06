@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     'student_attendance',
     'student_exam_result',
     'student_leaderboard',
-    'student_daily_activities'
+    'student_daily_activities',
+    'admin_auth',
+    'class_management',
 ]
 
 MIDDLEWARE = [
