@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
-from register_student.models import Student
+from register_student.models import Student, class_details
 from register_student.serializers import StudentDisplaySerializer
+from .serializers import ClassDetailsSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
@@ -35,3 +36,40 @@ class StudentFilterGetMethods(APIView):
             return Response({'Message': 'No students found'}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response({'all_students': serializer.data}, status=status.HTTP_200_OK)
+    
+    
+class AllClassesView(APIView):
+    def get(self, request):
+        try:
+            batch_year = request.data.get('batch_year')  # Use query_params for GET requests
+            
+            if not batch_year:
+                unique_batch_years = class_details.objects.values_list('batch_year', flat=True).distinct().order_by('-batch_year')
+                
+                if not unique_batch_years:
+                    return Response({'Message': 'No classes found'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                batch_year = unique_batch_years[0]
+            
+            
+            
+            
+            
+            if batch_year:
+                classes_instances = class_details.objects.filter(batch_year=batch_year)
+                
+                if not classes_instances:
+                    return Response({'Message': 'No classes found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+                serializer = ClassDetailsSerializer(classes_instances, many=True)
+                
+                return Response({'all_classes': serializer.data}, status=status.HTTP_200_OK)
+            
+            else:
+                return Response({'Message': 'Batch year not provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            print(e)
+            return Response({'Message': 'Error in fetching classes'}, status=status.HTTP_400_BAD_REQUEST)
+
+

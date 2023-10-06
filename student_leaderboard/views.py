@@ -50,8 +50,8 @@ class GetLeaderBoard(APIView):
         division = str(division).replace(" ", "")
         division = str(division).lower()
 
-        app_name = 'register_student'
-        table_name = app_name + '_' + app_name+ '_'+ batch_year + "_" + class_name + "_" + division + "_leaderboard"
+        app_name = 'register_student_'
+        table_name = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
 
         cursor = connection.cursor()
         cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} ORDER BY {subject} DESC NULLS LAST;")
