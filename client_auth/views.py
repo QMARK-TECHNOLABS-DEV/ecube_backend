@@ -26,21 +26,22 @@ class SendOTP(APIView):
             # Generate a random OTP (6 digits)
             try:
                 #otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                
                 otp = '123456'
                 # Store OTP in session
-                # expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+                expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
-                # request.session['otp'] = {
-                #     'phone_number': phone_number,
-                #     'code': otp,
-                #     'expiry': expiry_time
-                # }
+                request.session['otp'] = {
+                    'phone_number': phone_number,
+                    'code': otp,
+                    'expiry': expiry_time
+                }
 
-                # # Initialize the Amazon SNS client
-                # client = boto3.client("sns")
+                # Initialize the Amazon SNS client
+                #client = boto3.client("sns")
                 
-                # phone_number = '+91' + phone_number
-                # # Send the OTP via SMS
+                phone_number = '+91' + phone_number
+                # Send the OTP via SMS
                 # response = client.publish(
                 #     PhoneNumber=phone_number,
                 #     Message=f'Your OTP is: {otp}',
@@ -50,7 +51,7 @@ class SendOTP(APIView):
                 #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 if otp:
                     print(f'OTP sent successfully to {phone_number}')
-                    return JsonResponse({'message': 'OTP sent successfully', 'otp': otp})
+                    return JsonResponse({'message': 'OTP sent successfully'})
                 else:
                     print('Failed to send OTP')
                     return JsonResponse({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -62,64 +63,48 @@ class SendOTP(APIView):
             return JsonResponse({'message': 'Invalid phone_number'}, status=status.HTTP_400_BAD_REQUEST)
         
         
-        
 class VerifyOTP(APIView):
     def post(self, request):
         # Get the OTP entered by the user from the request data
-        try: 
-            entered_otp = request.data.get('otp')
-            phone_number = request.data.get('phone_number')
-            
-            user = Student.objects.filter(phone_no=phone_number).first()
-            
-            if not user:
-                return Response({'message': 'Invalid phone number'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Get the OTP and its expiry timestamp from the session
-            #session_otp_data = request.session.get('otp')
+        entered_otp = request.data.get('otp')
+        
+        # Get the OTP and its expiry timestamp from the session
+        session_otp_data = request.session.get('otp')
 
-            # Check if session_otp_data exists and if the OTP has not expired
-            # if session_otp_data:
-            #     expiry_timestamp = session_otp_data.get('expiry')
-            #     current_time = (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')
+        # Check if session_otp_data exists and if the OTP has not expired
+        if session_otp_data:
+            expiry_timestamp = session_otp_data.get('expiry')
+            current_time = (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')
+            
+            if current_time < expiry_timestamp:
+                stored_otp = session_otp_data.get('code')
                 
-                # if current_time < expiry_timestamp:
-                #     stored_otp = session_otp_data.get('code')
+                if entered_otp == stored_otp:
                     
-            if entered_otp == '123456':
-
-                if user is not None:
+                    phone_number = session_otp_data.get('phone_number')
                     
-                    if user.logged_in:
-                        user_token = Token.objects.get(user_id=user.id)
-                        
-                        user_token.delete()
-                        
-            
-                access_token, refresh_token = TokenUtil.generate_tokens(user)
+                    user = Student.objects.filter(phone_no=phone_number).first()
+    
                 
-                #request.session.pop('otp', None)
+                    access_token, refresh_token = TokenUtil.generate_tokens(user)
+                    
+                    request.session.pop('otp', None)
 
-    # Validate tokens
-                if TokenUtil.validate_tokens(access_token, refresh_token):
-                    user.logged_in = True
-                    user.save()
-                    return JsonResponse({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
+        # Validate tokens
+                    if TokenUtil.validate_tokens(access_token, refresh_token):
+                        return JsonResponse({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
+                    else:
+                        return JsonResponse({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
                 else:
-                    return JsonResponse({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
+                    # Invalid OTP
+                    return JsonResponse({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
             else:
-                # Invalid OTP
-                return JsonResponse({'message': 'Invalid OTP'}, status=status.HTTP_401_UNAUTHORIZED)
-                # else:
-                #     # OTP has expired
-                #     request.session.pop('otp', None)
-                #     return JsonResponse({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
-            # else:
-            #     # Session data for OTP not found
-            #     return JsonResponse({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            print(e)
-            return JsonResponse({'message': 'Failed to verify OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                # OTP has expired
+                request.session.pop('otp', None)
+                return JsonResponse({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Session data for OTP not found
+            return JsonResponse({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
         
 class ValidateTokenView(APIView):
     def post(self, request):

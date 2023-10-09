@@ -86,18 +86,44 @@ class ClassMethods(APIView):
             
             if class_instance:
                 
+                app_name = 'register_student_'
+                    
+                table_name = f"{app_name}{app_name}{class_instance.batch_year}_{class_instance.class_name}_{class_instance.division}".replace(" ","").lower()
+                    
+                feature_group_id = ['_examresults', '_leaderboard', '_attendance', '_dailyupdates']
+                
                 data = request.data
-            
+                
+                new_table_name = f"{app_name}{app_name}{data['batch_year']}_{data['class_name']}_{data['division']}".replace(" ","").lower()
             # Convert data values to uppercase
                 for key in data:
                     if isinstance(data[key], str):
                         data[key] = data[key].upper()
                         
+                if class_details.objects.filter(class_name=data['class_name'], division=data['division'], batch_year=data['batch_year']).exists():
+                    return Response({'Message': 'Class already exists'}, status=status.HTTP_400_BAD_REQUEST)
+                        
                 serializer = ClassDetailsSerializer(class_instance, data=data)
+                
                 if serializer.is_valid():
+
+                    
                     serializer.save()
                     
-
+                    cursor = connection.cursor()
+                    
+                    for row in feature_group_id:
+                        try:
+                            cursor = connection.cursor()
+                            cursor.execute(f"ALTER TABLE {table_name+row} RENAME TO {new_table_name+row}")
+                            print(f'Table {table_name+row} deleted')
+                            
+                        except DatabaseError as e:
+                            print(f'Error deleting table {table_name+row}: {str(e)}')  
+                    
+                
+                                 
+                    
                     return Response({"message": "Class updated successfully"}, status=status.HTTP_200_OK)
                 else:
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

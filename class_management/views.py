@@ -52,9 +52,6 @@ class AllClassesView(APIView):
                 batch_year = unique_batch_years[0]
             
             
-            
-            
-            
             if batch_year:
                 classes_instances = class_details.objects.filter(batch_year=batch_year)
                 
@@ -72,4 +69,45 @@ class AllClassesView(APIView):
             print(e)
             return Response({'Message': 'Error in fetching classes'}, status=status.HTTP_400_BAD_REQUEST)
 
+class AllBatchYear(APIView):
+    def get(self, request):
+        try:
+            batch_year = class_details.objects.values_list('batch_year', flat=True).distinct().order_by('-batch_year')
+            
+            if not batch_year:
+                return Response({'Message': 'No classes found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({'batch_year': batch_year}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print(e)
+            return Response({'Message': 'Error in fetching classes'}, status=status.HTTP_400_BAD_REQUEST)
 
+class AllClassName(APIView):
+    def get(self, request):
+        try:
+            class_name = class_details.objects.values_list('class_name', flat=True).distinct().order_by('-class_name')
+            
+            if not class_name:
+                return Response({'Message': 'No classes found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({'class_name': class_name}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print(e)
+            return Response({'Message': 'Error in fetching classes'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class AllDivision(APIView):
+    def get(self, request):
+        try:
+            division = class_details.objects.values_list('division', flat=True).distinct().order_by('-division')
+            
+            if not division:
+                return Response({'Message': 'No classes found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({'division': division}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print(e)
+            return Response({'Message': 'Error in fetching classes'}, status=status.HTTP_400_BAD_REQUEST)

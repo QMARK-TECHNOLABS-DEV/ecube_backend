@@ -124,7 +124,7 @@ class AddAttendanceBulk(APIView):
 
     
 class GetAttendance(APIView):
-    def post(self,request):
+    def get(self,request):
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
         if not authorization_header:
