@@ -182,6 +182,7 @@ class GetDailyUpdate(APIView):
         
 
         payload = TokenUtil.decode_token(token_key.access_token)
+        
 
         # Optionally, you can extract user information or other claims from the payload
         if not payload:
@@ -195,9 +196,22 @@ class GetDailyUpdate(APIView):
         # Generate a new access token
         user = Student.objects.get(id=user_id)
         
+        
+        batch_year = user.batch_year
+        class_name = user.class_name
+        division = user.division
+    
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "").lower()
+        division = str(division).replace(" ", "").lower()
+
+        app_name = 'register_student'
+        
+        table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_dailyupdates"
+        
         cursor = connection.cursor()
         
-        cursor.execute(f"SELECT * FROM public.register_student_register_student_{user.batch_year}_{user.class_name}_{user.division}_dailyupdates WHERE date = %s AND admission_no = %s", [date, user.admission_no])
+        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND admission_no = %s", [date, user.admission_no])
         
         
         query_result = cursor.fetchall()

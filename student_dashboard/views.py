@@ -38,6 +38,7 @@ class StudentGetDashboard(APIView):
         
         student_info = {
             "name": user.name,
+            "profile_image": "",
             "admission_no": user.admission_no,
             "class_name": user.class_name,
             "division": user.division,

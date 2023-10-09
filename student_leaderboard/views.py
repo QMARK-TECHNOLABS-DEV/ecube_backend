@@ -70,9 +70,14 @@ class GetLeaderBoard(APIView):
             
             if row[0] == user.admission_no:
                 user_rank = query_results.index(row) + 1
+                
+            other_student = Student.objects.get(admission_no=row[0])
+            
             leaderboard.append({
                 "admission_no": row[0],
                 "total": row[1],
+                "name": other_student.name,
+                "profile_image": "",
             })
 
         return Response({'leaderboard': leaderboard,'user_rank': user_rank}, status=status.HTTP_200_OK)
