@@ -117,9 +117,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-os.environ['AWS_ACCESS_KEY_ID'] = 'AKIA47LB3TDRGNBRHDCK'
-os.environ['AWS_SECRET_ACCESS_KEY'] = '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'
+os.environ['AWS_ACCESS_KEY_ID'] = 'AKIA47LB3TDRESJZJBKM'
+os.environ['AWS_SECRET_ACCESS_KEY'] = 'qKjT2BBczapIchL66aiktbNtLm1pksuh/X2WPTOz'
 os.environ['AWS_DEFAULT_REGION'] = 'ap-south-1'  # Change this to your desired region
+
+fast2sms_api_key = '6n5Yp9LQHNscEkqGXIV1PrOu4ZKmRh0baTMt7gd8vijBf3lSoC9J1onzsCfVBpubTAX0542kP6dea8lO'
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 

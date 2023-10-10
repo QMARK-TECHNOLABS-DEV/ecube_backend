@@ -9,9 +9,11 @@ from rest_framework import status
 from .utils import TokenUtil
 from .models import Token
 from register_student.models import Student
+from .fast_sms import sendSMS
 import boto3
 import random
-import jwt
+import jwt, json
+
 
 class SendOTP(APIView):
     def post(self, request):
@@ -25,9 +27,9 @@ class SendOTP(APIView):
         if db_phone_number:
             # Generate a random OTP (6 digits)
             try:
-                #otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
                 
-                otp = '123456'
+                
                 # Store OTP in session
                 expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
@@ -36,20 +38,27 @@ class SendOTP(APIView):
                     'code': otp,
                     'expiry': expiry_time
                 }
-
-                # Initialize the Amazon SNS client
-                #client = boto3.client("sns")
                 
-                phone_number = '+91' + phone_number
-                # Send the OTP via SMS
+                # Initialize the Amazon SNS client
+                # client = boto3.client("sns")
+                
+                
+                # # Send the OTP via SMS
                 # response = client.publish(
                 #     PhoneNumber=phone_number,
                 #     Message=f'Your OTP is: {otp}',
                 # )
-
+                
+                response = sendSMS(otp, phone_number)
+                
+                response_data = json.loads(response)
+                
+                
+                # Access the 'return' key
+                return_value = response_data.get('return')
                 # Check the response
                 #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                if otp:
+                if return_value == True:
                     print(f'OTP sent successfully to {phone_number}')
                     return JsonResponse({'message': 'OTP sent successfully'})
                 else:

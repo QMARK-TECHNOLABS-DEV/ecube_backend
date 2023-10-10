@@ -66,17 +66,17 @@ class GetLeaderBoard(APIView):
         
         leaderboard = []
         
-        user_rank = []
+        user_rank = {}
 
         for row in query_results:
             
             if row[0] == user.admission_no:
-                user_rank.append({
+                user_rank = {
                     "name": user.name,
                     "profile_image": "",
                     "rank": query_results.index(row) + 1,
                     "mark": row[1],
-                    }) 
+                    }
                 
             other_student = Student.objects.get(admission_no=row[0])
             
