@@ -160,11 +160,18 @@ class GetDates(APIView):
         
         table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_dailyupdates"
         
-        cursor = connection.cursor()
-        
-        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name}")
+        try:
+            cursor = connection.cursor()
+            
+            cursor.execute(f"SELECT DISTINCT date, TO_DATE(date, 'DD/MM/YYYY') AS parsed_date FROM public.{table_name} ORDER BY parsed_date DESC")
 
-        dates = cursor.fetchall()
+            dates = cursor.fetchall()
+            
+        except Exception as e:
+            # Handle exceptions here
+            print(f"Error: {str(e)}")
+            return Response({'message': 'Failed to save data'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         
         dates_list = []
         
