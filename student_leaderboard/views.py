@@ -74,14 +74,15 @@ class GetLeaderBoard(APIView):
                 user_rank.append({
                     "name": user.name,
                     "profile_image": "",
-                    "total": query_results.index(row) + 1,
+                    "rank": query_results.index(row) + 1,
+                    "mark": row[1],
                     }) 
                 
             other_student = Student.objects.get(admission_no=row[0])
             
             leaderboard.append({
                 "admission_no": row[0],
-                "total": row[1],
+                "mark": row[1],
                 "name": other_student.name,
                 "profile_image": "",
             })
