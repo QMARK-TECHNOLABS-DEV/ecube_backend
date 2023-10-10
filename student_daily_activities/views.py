@@ -148,10 +148,21 @@ class GetDates(APIView):
         # Generate a new access token
         user = Student.objects.get(id=user_id)
         
+        batch_year = user.batch_year
+        class_name = user.class_name
+        division = user.division
+    
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "").lower()
+        division = str(division).replace(" ", "").lower()
+
+        app_name = 'register_student'
+        
+        table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_dailyupdates"
         
         cursor = connection.cursor()
         
-        cursor.execute(f"SELECT DISTINCT date FROM public.register_student_register_student_{user.batch_year}_{user.class_name}_{user.division}_dailyupdates")
+        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name}")
 
         dates = cursor.fetchall()
         

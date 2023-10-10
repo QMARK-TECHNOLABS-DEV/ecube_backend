@@ -115,12 +115,11 @@ class ValidateTokenView(APIView):
 
         try:
             _, token = authorization_header.split()
-            
+
             token_key = Token.objects.filter(access_token=token).first()
-            
+
             if not token_key:
                 return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-            
 
             payload = TokenUtil.decode_token(token_key.access_token)
 
@@ -131,7 +130,7 @@ class ValidateTokenView(APIView):
             # Implement additional authorization logic here if needed
 
         except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
-            return Response({"error": "Invalid or expired access token."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Access token is valid; you can proceed with request processing
         return Response({"message": "Access token is valid."}, status=status.HTTP_200_OK)

@@ -2,7 +2,7 @@ from django.db import connection
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from register_student.models import Student
+from register_student.models import Student, class_details
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 from django.http import JsonResponse
@@ -51,8 +51,13 @@ class AddAttendanceBulk(APIView):
         date_attendance = request.GET.get('date')
 
         if batch_year is None or class_name is None or division is None or date_attendance is None:
-            return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'status': 'failure', 'message': 'batch_year, class_name, date and division are required'}, status=status.HTTP_400_BAD_REQUEST)
 
+        class_instance = class_details.objects.filter(batch_year=batch_year, class_name=class_name, division=division).first()
+        
+        if class_instance is None:
+            return Response({'status': 'failure', 'message': 'Class does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
         batch_year = str(batch_year)
         class_name = str(class_name).replace(" ", "")
         class_name = str(class_name).lower()
@@ -71,64 +76,44 @@ class AddAttendanceBulk(APIView):
         except Exception as e:
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Convert 'date' to the desired format 'dd/mm/yyyy'
-        def format_date(date_str):
-            if isinstance(date_str, datetime):
-                return date_str.strftime('%d/%m/%Y')
-            elif isinstance(date_str, str):
-                try:
-                    date_obj = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-                    return date_obj.strftime('%d/%m/%Y')
-                except ValueError:
-                    # Handle the case where the input is already in the desired format
-                    return date_str
-            return None
+        # Insert attendance data into the database
+        date_attendance = str(date_attendance)
 
-        df['date'] = df['date'].apply(format_date)
-
-        # Convert 'month_year_number' to the desired format 'mm/yyyy'
-        def format_month_year(month_year_str):
-            if isinstance(month_year_str, datetime):
-                return month_year_str.strftime('%m/%Y')
-            elif isinstance(month_year_str, str):
-                try:
-                    date_obj = datetime.strptime(month_year_str, '%Y-%m-%d %H:%M:%S')
-                    return date_obj.strftime('%m/%Y')
-                except ValueError:
-                    # Handle the case where the input is already in the desired format
-                    return date_obj.strftime('%m/%Y')
-            return None
-
-       
         # Insert attendance data into the database
         app_name = 'register_student'
         table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
 
-        cursor = connection.cursor()
+        
 
         try:
             for index, row in df.iterrows():
-                first_name= row.get('First name', None)
+                first_name = row.get('First name', None)
                 last_name = row.get('Last name', None)
-                full_name = first_name + last_name
-                
-                full_name = full_name.replace(" ", "")
-                full_name = full_name.lower()
-                
-                admission_no = Student.objects.filter(full_name=full_name).first().admission_no
-                
-                if admission_no is None:
-                    continue
-                
-                date = date_attendance
-                status_student = 'P'
-                
-                month_year_number = date[4:]
+                full_name = str(first_name) + str(last_name)
 
-                if admission_no is not None and month_year_number is not None and date is not None and status_student is not None:
-                    cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status) VALUES (%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student])
+                full_name = full_name.replace(" ", "").lower()
+                student_instance = Student.objects.filter(name__iexact=full_name.replace(" ", "")).first()
 
-            cursor.close()
+
+                if student_instance is not None:
+                    admission_no = student_instance.admission_no
+                    
+                    cursor = connection.cursor()
+                    
+                    print("Found student")
+                    # Convert date to a string
+                    date = date_attendance
+                    
+                    status_student = 'P'
+
+                    month_year_number = date[4:]
+
+                    if admission_no is not None and month_year_number is not None and date is not None and status_student is not None:
+                        cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status) VALUES (%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student])
+                        
+                        print("Inserted")
+                        cursor.close()
+
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except Exception as e:
             cursor.close()
