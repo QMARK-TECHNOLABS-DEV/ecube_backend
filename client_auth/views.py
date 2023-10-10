@@ -92,7 +92,7 @@ class VerifyOTP(APIView):
 
         # Validate tokens
                     if TokenUtil.validate_tokens(access_token, refresh_token):
-                        return JsonResponse({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
+                        return JsonResponse({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name}, status=status.HTTP_200_OK)
                     else:
                         return JsonResponse({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
                 else:

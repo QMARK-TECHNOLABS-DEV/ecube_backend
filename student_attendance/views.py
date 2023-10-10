@@ -82,9 +82,9 @@ class AddAttendanceBulk(APIView):
         # Insert attendance data into the database
         app_name = 'register_student'
         table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
-
         
-
+        student_list = Student.objects.all().values('name','id')
+        
         try:
             for index, row in df.iterrows():
                 first_name = row.get('First name', None)
@@ -92,27 +92,42 @@ class AddAttendanceBulk(APIView):
                 full_name = str(first_name) + str(last_name)
 
                 full_name = full_name.replace(" ", "").lower()
-                student_instance = Student.objects.filter(name__iexact=full_name.replace(" ", "")).first()
-
-
-                if student_instance is not None:
-                    admission_no = student_instance.admission_no
+                
+                print(full_name)
+                
+                for student in student_list:
                     
-                    cursor = connection.cursor()
+                    name_db = student['name'].replace(" ", "").lower()
                     
-                    print("Found student")
-                    # Convert date to a string
-                    date = date_attendance
+                    print(name_db)
                     
-                    status_student = 'P'
+                    if full_name == name_db:
+                        student_instance = Student.objects.get(id=student['id'])
+                    else:
+                        student_instance = None
+                
+                
+                
 
-                    month_year_number = date[4:]
 
-                    if admission_no is not None and month_year_number is not None and date is not None and status_student is not None:
-                        cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status) VALUES (%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student])
+                    if student_instance is not None:
+                        admission_no = student_instance.admission_no
                         
-                        print("Inserted")
-                        cursor.close()
+                        cursor = connection.cursor()
+                        
+                        print("Found student")
+                        # Convert date to a string
+                        date = date_attendance
+                        
+                        status_student = 'P'
+
+                        month_year_number = date[3:]
+
+                        if admission_no is not None and month_year_number is not None and date is not None and status_student is not None:
+                            cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status) VALUES (%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student])
+                            
+                            print("Inserted")
+                            cursor.close()
 
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except Exception as e:
@@ -147,9 +162,23 @@ class GetAttendance(APIView):
 
         # Generate a new access token
         user = Student.objects.get(id=user_id)
+        
+        batch_year = user.batch_year
+        class_name = user.class_name
+        division = user.division
+        
+        if batch_year is None or class_name is None or division is None:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "")
+        class_name = str(class_name).lower()
+        division = str(division).replace(" ", "")
+        division = str(division).lower()
+        
 
         app_name = 'register_student'
-        table_name = app_name + '_' + app_name + '_' + user.batch_year + "_" + user.class_name + "_" + user.division + "_attendance"
+        table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
 
         month_year_number = request.GET.get('month_year_number')
 
