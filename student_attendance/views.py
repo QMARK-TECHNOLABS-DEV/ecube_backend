@@ -183,7 +183,7 @@ class GetAttendance(APIView):
         month_year_number = request.GET.get('month_year_number')
 
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s", [user.admission_no, month_year_number])
+        cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s;", [user.admission_no, month_year_number])
         query_result = cursor.fetchall()
         cursor.close()
 
@@ -191,7 +191,7 @@ class GetAttendance(APIView):
         cursor.execute(f"SELECT DISTINCT date FROM public.{table_name}")
         distinct_dates = [row[0] for row in cursor.fetchall()]
         cursor.close()
-
+        
         # Create an empty dictionary to store attendance information
         attendance_data = {}
 
@@ -218,3 +218,94 @@ class GetAttendance(APIView):
         response_data = {"attendance_result": {"present_days": present_days, "absent_days": absent_days}}
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
+    
+class GetAttendanceYearStatus(APIView):
+    def get(self, request):
+        
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            _, token = authorization_header.split()
+
+            token_key = Token.objects.filter(access_token=token).first()
+
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            payload = TokenUtil.decode_token(token_key.access_token)
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = payload.get('id')
+
+            if not user_id:
+                return JsonResponse({'error': 'The refresh token is not associated with a user.'}, status=401)
+
+            # Generate a new access token
+            user = Student.objects.get(id=user_id)
+            
+            batch_year = user.batch_year
+            class_name = user.class_name
+            division = user.division
+            
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+            
+
+            app_name = 'register_student'
+            table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
+            
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s;", [user.admission_no])
+            year_query_result = cursor.fetchall()
+            cursor.close()
+            
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT DISTINCT date FROM public.{table_name}")
+            distinct_dates = [row[0] for row in cursor.fetchall()]
+            cursor.close()
+           
+            
+            attendance_data = {}
+
+            # Function to convert date strings to objects with year, month, and day fields as integers
+            def date_string_to_object(date_string):
+                day, month, year = map(int, date_string.split('/'))
+                return {"year": f"{year}", "month": f"{month:02d}", "day": f"{day:02d}"}
+
+            # Iterate through the query result and build attendance_data
+            for row in year_query_result:
+                id, admission_no, month_year, date, status_att = row
+                date_obj = date_string_to_object(date)
+                attendance_data[date] = status_att
+
+            # Iterate through distinct_dates and mark absent if date is missing in attendance_data
+            for date in distinct_dates:
+                if date not in attendance_data:
+                    attendance_data[date] = "A"
+
+            # Create the final response dictionary
+            present_days = [date_string_to_object(date) for date, status_att in attendance_data.items() if status_att == "P"]
+            absent_days = [date_string_to_object(date) for date, status_att in attendance_data.items() if status_att == "A"]
+            
+            total_working_days = len(present_days) + len(absent_days)
+
+            response_data = {"total_working_days": total_working_days, "present_days": len(present_days), "absent_days": len(absent_days)}
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)

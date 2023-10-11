@@ -5,4 +5,5 @@ urlpatterns = [
     path('attendance/add/', views.AddAttendance.as_view(), name='add-attendance'),
     path('attendance/add/bulk/', views.AddAttendanceBulk.as_view(), name='add-attendance-bulk'),
     path('attendance/get/', views.GetAttendance.as_view(), name='get-attendance'),
+    path('attendance/get/status/', views.GetAttendanceYearStatus.as_view(), name='get-attendance-year-status'),
 ]
