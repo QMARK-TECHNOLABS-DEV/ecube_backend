@@ -54,7 +54,7 @@ class GetLeaderBoard(APIView):
         table_name = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
 
         cursor = connection.cursor()
-        cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} ORDER BY {subject} DESC NULLS LAST;")
+        cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} ORDER BY {subject} DESC NULLS LAST LIMIT 10;")
         query_results = cursor.fetchall()
         cursor.close()
         
