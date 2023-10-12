@@ -1,9 +1,4 @@
 FROM python:3.11.4-slim-buster
-
-RUN pip install --upgrade setuptools
-# Install PostgreSQL development files
-RUN apt-get update && apt-get install -y libpq-dev && apt-get install -y python3-dev && apt-get install -y gcc 
-
 # Set the working directory
 WORKDIR /app  
 
