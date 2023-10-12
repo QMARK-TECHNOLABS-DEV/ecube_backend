@@ -188,7 +188,7 @@ class GetAttendance(APIView):
         cursor.close()
 
         cursor = connection.cursor()
-        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name}")
+        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name} WHERE month_year_number = %s;", [month_year_number])
         distinct_dates = [row[0] for row in cursor.fetchall()]
         cursor.close()
         
