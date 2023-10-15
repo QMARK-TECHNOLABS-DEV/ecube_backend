@@ -16,6 +16,7 @@ COPY . /app
 RUN pip cache purge
 RUN pip install --upgrade pip
 # Install any other dependencies
+RUN pip install -r requirements.txt
 
 # Command to run your application
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8002"]
