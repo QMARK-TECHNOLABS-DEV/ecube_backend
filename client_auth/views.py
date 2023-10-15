@@ -7,10 +7,10 @@ from django.conf import settings
 from rest_framework.response import Response
 from rest_framework import status
 from .utils import TokenUtil
-from .models import Token
+from .models import Token, OTP
 from register_student.models import Student
 from .fast_sms import sendSMS
-import boto3
+from django.utils import timezone 
 import random
 import jwt, json
 
@@ -20,7 +20,7 @@ class SendOTP(APIView):
         phone_number = request.data.get('phone_number')
         # Ensure the phone_number is valid (you might want to add more validation)
         if not phone_number:
-            return JsonResponse({'message': 'Invalid phone_number'}, status=400)
+            return Response({'message': 'Invalid phone_number'}, status=400)
         
         db_phone_number = Student.objects.filter(phone_no=phone_number).first()
         
@@ -33,12 +33,8 @@ class SendOTP(APIView):
                 # Store OTP in session
                 expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
-                request.session['otp'] = {
-                    'phone_number': phone_number,
-                    'code': otp,
-                    'expiry': expiry_time
-                }
-                
+                OTP.objects.create(phone_number=phone_number, code=otp, expiry_time=expiry_time)
+            
                 # Initialize the Amazon SNS client
                 # client = boto3.client("sns")
                 
@@ -60,60 +56,58 @@ class SendOTP(APIView):
                 #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 if return_value == True:
                     print(f'OTP sent successfully to {phone_number}')
-                    return JsonResponse({'message': 'OTP sent successfully'})
+                    return Response({'message': 'OTP sent successfully'})
                 else:
                     print('Failed to send OTP')
-                    return JsonResponse({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
             except Exception as e:
                 print(e)
-                return JsonResponse({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
-            return JsonResponse({'message': 'Invalid phone_number'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Invalid phone_number'}, status=status.HTTP_400_BAD_REQUEST)
         
         
 class VerifyOTP(APIView):
     def post(self, request):
         # Get the OTP entered by the user from the request data
         entered_otp = request.data.get('otp')
-        
+        phone_number = request.data.get('phone_number')
         # Get the OTP and its expiry timestamp from the session
-        session_otp_data = request.session.get('otp')
-
-        # Check if session_otp_data exists and if the OTP has not expired
-        if session_otp_data:
-            expiry_timestamp = session_otp_data.get('expiry')
-            current_time = (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S')
+        try:
+            otp = OTP.objects.get(phone_number=phone_number)
             
-            if current_time < expiry_timestamp:
-                stored_otp = session_otp_data.get('code')
+            # Ensure both times are in the same timezone-aware format
+            current_time = timezone.now()  # Get the current time in the same timezone
+            expiry_time = otp.expiry_time
+            
+            if expiry_time > current_time:
+                if entered_otp == str(otp.code):
                 
-                if entered_otp == stored_otp:
-                    
-                    phone_number = session_otp_data.get('phone_number')
-                    
                     user = Student.objects.filter(phone_no=phone_number).first()
-    
-                
+                    
+                    if user is None:
+                        return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                    
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
                     
-                    request.session.pop('otp', None)
+                    otp.delete()  
 
-        # Validate tokens
+                    # Validate tokens
                     if TokenUtil.validate_tokens(access_token, refresh_token):
-                        return JsonResponse({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name}, status=status.HTTP_200_OK)
+                        return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name}, status=status.HTTP_200_OK)
                     else:
-                        return JsonResponse({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
+                        return Response({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
+                    
                 else:
-                    # Invalid OTP
-                    return JsonResponse({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+
             else:
-                # OTP has expired
-                request.session.pop('otp', None)
-                return JsonResponse({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
+                otp.delete()
+                return Response({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
+        except OTP.DoesNotExist:
             # Session data for OTP not found
-            return JsonResponse({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
         
 class ValidateTokenView(APIView):
     def post(self, request):
@@ -162,13 +156,13 @@ class RequestAccessToken(APIView):
         refresh_token_payload = TokenUtil.decode_token(refresh_token)
         
         if not refresh_token_payload:
-            return JsonResponse({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Check if the refresh token is associated with a user (add your logic here)
         user_id = refresh_token_payload.get('id')
         
         if not user_id:
-            return JsonResponse({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Generate a new access token
         user = Student.objects.get(id=user_id)
@@ -176,14 +170,14 @@ class RequestAccessToken(APIView):
         access_token = TokenUtil.generate_access_token(user)
         
         if TokenUtil.validate_access_token(access_token):
-            return JsonResponse({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             
             user_token = Token.objects.get(refresh_token=refresh_token)
             user_token.access_token = access_token
             user_token.save()
             
-            return JsonResponse({'access_token': access_token}, status=status.HTTP_200_OK)
+            return Response({'access_token': access_token}, status=status.HTTP_200_OK)
     
 class LogoutView(APIView):
     def dispatch(self, *args, **kwargs):
@@ -194,12 +188,12 @@ class LogoutView(APIView):
         access_token = request.data.get('access_token')
 
         if not access_token:
-            return JsonResponse({'error': 'Access token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Access token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if TokenUtil.is_token_valid(access_token):
             TokenUtil.blacklist_token(access_token)
             
-            return JsonResponse({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
+            return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
         else:
-            return JsonResponse({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
 

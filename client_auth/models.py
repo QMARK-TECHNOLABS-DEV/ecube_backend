@@ -10,3 +10,10 @@ class Token(models.Model):
 
     def __str__(self):
         return f"Token for {self.user.id}"
+    
+    
+class OTP(models.Model):
+    phone_number = models.CharField(max_length=15)
+    code = models.CharField(max_length=6)
+    expiry_time = models.DateTimeField()
+    
