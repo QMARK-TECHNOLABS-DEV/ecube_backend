@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
-from .models import Student, className, division, subjects, batchYear, table_names, create_tables, class_details
-from .serializers import ClassDetailsSerializer, StudentSerializer, classNameSerializer, divisionSerializer, subjectsSerializer, batchYearSerializer, table_namesSerializer
+from .models import Student, create_tables, class_details
+from .serializers import ClassDetailsSerializer, StudentSerializer
 import pandas as pd
 from django.db import connection, DatabaseError
 

@@ -88,19 +88,3 @@ def create_tables(app_name,unique_table_names):
     model_names = [app_name + unique_table_names+'_examResults', app_name+unique_table_names+'_leaderBoard', app_name+unique_table_names+'_attendance',app_name + unique_table_names+'_dailyUpdates']
     create_dynamic_models(model_names)
     
-class className(models.Model):
-    class_name = models.CharField(max_length=10)
-
-class division(models.Model):
-    division_name = models.CharField(max_length=1)
-    
-class subjects(models.Model):
-    subjects_name = models.CharField(max_length=10)
-    
-class batchYear(models.Model):
-    batch_year = models.TextField(null=False, blank=False,default=0)
-
-
-    
-class table_names(models.Model):
-    table_name = models.TextField(null=False, blank=False,default=0)
