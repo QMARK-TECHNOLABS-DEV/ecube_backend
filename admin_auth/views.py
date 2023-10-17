@@ -6,10 +6,16 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.shortcuts import render
 from .utils import TokenUtil
 import jwt
-from .models import Admin, Token
+from .models import Admin, Token, PasswordResetToken
 from .serializers import UserSerializer
+from django.core.mail import send_mail
+from django.contrib import messages
 
 class GetAllUsers(APIView):
     def get(self,request):
@@ -215,24 +221,32 @@ class RequestAccessToken(APIView):
             return Response({'access_token': access_token}, status=status.HTTP_200_OK)
  
 class ForgotPassword(APIView):
-    def post(self, request):
+    def post(self,request):
+       
+        email = request.data.get('email')
         try:
-            user = Admin.objects.get(email=request.data['email'], login_type='email')
-            
-            if user is not None:
-                user.password = make_password(request.data['password'])
-                
-                user_token = Token.objects.get(user_id=user.id)
-                
-                user_token.delete()
-                
-            else:
-                return Response("User is not registered with google!", status=status.HTTP_400_BAD_REQUEST)
-            
-        except ObjectDoesNotExist:
-            
-            return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
-        
+            user = Admin.objects.get(email=email)
+        except Admin.DoesNotExist:
+            user = None
+
+        if user is not None:
+            token = default_token_generator.make_token(user)
+            token = urlsafe_base64_encode(force_bytes(token))
+            PasswordResetToken.objects.create(user=user, token=token)
+            reset_link = f"http://{request.get_host()}/reset/{token}/"
+
+            send_mail(
+                "Password Reset",
+                f"Click the following link to reset your password: {reset_link}",
+                "qmarktechnolabs@gmail.com",
+                [user.email],
+                fail_silently=False,
+            )
+            messages.success(request, "A password reset link has been sent to your email.")
+        else:
+            messages.error(request, "No user with that email address found.")
+
+        return render(request, "password_reset_request.html")
 # logout user
 class LogoutUser(APIView):
     def post(self,request):

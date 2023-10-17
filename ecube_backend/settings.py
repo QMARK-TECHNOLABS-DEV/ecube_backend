@@ -115,6 +115,13 @@ DATABASES = {
   }
 }
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'qmarktechnolabs@gmail.com'
+EMAIL_HOST_PASSWORD = 'cZP4OvyxEDbtLAVW'
+
 # Token expiration times in minutes
 ACCESS_TOKEN_EXPIRATION = 5 # Adjust as needed
 REFRESH_TOKEN_EXPIRATION = 403200 # Adjust as needed
