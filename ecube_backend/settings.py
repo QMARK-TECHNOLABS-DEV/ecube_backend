@@ -123,7 +123,7 @@ EMAIL_HOST_USER = 'qmarktechnolabs@gmail.com'
 EMAIL_HOST_PASSWORD = 'cZP4OvyxEDbtLAVW'
 
 # Token expiration times in minutes
-ACCESS_TOKEN_EXPIRATION = 5 # Adjust as needed
+ACCESS_TOKEN_EXPIRATION = 120 # Adjust as needed
 REFRESH_TOKEN_EXPIRATION = 403200 # Adjust as needed
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
