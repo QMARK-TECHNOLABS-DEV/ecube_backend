@@ -8,6 +8,8 @@ class class_details(models.Model):
     division = models.CharField(max_length=1)
     subjects = models.TextField(default='')
     batch_year = models.TextField(null=False, blank=False,default=0)
+    
+
 class Student(models.Model):
 
     name = models.TextField()

@@ -9,7 +9,30 @@ from django.db import connection, DatabaseError
 
 class StudentMethods(APIView):
     def post(self, request):
-        serializer = StudentSerializer(data=request.data)
+        
+        batch_year = request.query_params.get('batch_year')
+        class_name = request.query_params.get('class_name')
+        division = request.query_params.get('division')
+        subjects = request.query_params.get('subjects')
+        
+        class_instance = class_details.objects.filter(batch_year=batch_year,class_name=class_name,division=division)
+        
+        print(class_instance)
+        
+        if not class_instance:
+            return Response({'message': 'No such class group'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = request.data.copy()
+        
+        data['batch_year'] = batch_year
+        data['class_name'] = class_name
+        data['division'] = division
+        data['subjects'] = subjects
+        data['class_group'] = class_instance[0].id
+        
+        
+        serializer = StudentSerializer(data=data)
+        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
