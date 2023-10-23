@@ -34,12 +34,13 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'channels_postgres',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'rest_framework',
     'register_student',
     'client_auth',
@@ -50,6 +51,9 @@ INSTALLED_APPS = [
     'admin_auth',
     'class_management',
     'corsheaders',
+    'chat_system',
+    'daphne',
+    'django.contrib.staticfiles',
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -59,6 +63,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://localhost:4200",
     
 ]
+
+LOGIN_REDIRECT_URL = 'chat-page'
+
+LOGOUT_REDIRECT_URL = 'login-user'  
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -105,15 +113,42 @@ WSGI_APPLICATION = 'ecube_backend.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-  'default': {
-    'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    'NAME': 'ecubeBackend',
-    'USER': 'mysuperuser',
-    'PASSWORD': 'mysuperuser',
-    'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
-    'PORT': '5432',  # Use the correct PostgreSQL port number
-  }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'ecubeBackend',
+        'USER': 'mysuperuser',
+        'PASSWORD': 'mysuperuser',
+        'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
+        'PORT': '5432', 
+    },
+  
+  	'channels_postgres': {
+		'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'ecubeBackend',
+        'USER': 'mysuperuser',
+        'PASSWORD': 'mysuperuser',
+        'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
+        'PORT': '5432', 
+	}
 }
+
+ASGI_APPLICATION = "ecube_backend.routing.application"
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_postgres.core.PostgresChannelLayer',
+        'CONFIG': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'ecubeBackend',
+            'USER': 'mysuperuser',
+            'PASSWORD': 'mysuperuser',
+            'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
+            'PORT': '5432', 
+        },
+    },
+}
+
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp-relay.brevo.com'

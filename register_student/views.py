@@ -157,7 +157,8 @@ class ClassMethods(APIView):
         
     def delete(self, request):
         try:
-            class_id = request.data.get('id')
+            
+            class_id = request.GET.get('id')
             
             if class_id:
                 class_instance = class_details.objects.filter(id=class_id).first()

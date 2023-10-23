@@ -11,7 +11,7 @@ class class_details(models.Model):
 class Student(models.Model):
 
     name = models.TextField()
-    admission_no = models.CharField()
+    admission_no = models.CharField(max_length=20)
     phone_no = models.CharField(max_length=10,primary_key=False)
     batch_year = models.TextField(null=False, blank=False,default=0)
     class_name = models.CharField(max_length=10)
@@ -31,30 +31,30 @@ class ExamResults(models.Model):
     
     
 class LeaderBoard(models.Model):    
-    admission_no = models.CharField()
+    admission_no = models.CharField(max_length=20)  
     physics = models.IntegerField(null=True, blank=True)
     chemistry = models.IntegerField(null=True, blank=True)
     maths = models.IntegerField(null=True, blank=True)
     
 class Attendance(models.Model):
-    admission_no = models.CharField()
-    month_year_number = models.CharField() # 8/2021
-    date = models.CharField()
-    status = models.CharField()
+    admission_no = models.CharField(max_length=20)
+    month_year_number = models.CharField(max_length=20) 
+    date = models.CharField(max_length=20) 
+    status = models.CharField(max_length=20)
 
 class DailyUpdates(models.Model):
-    admission_no = models.CharField()
-    date = models.CharField()
+    admission_no = models.CharField(max_length=20)
+    date = models.CharField(max_length=20)
     on_time = models.BooleanField(default=True)
     voice = models.BooleanField(default=True)
     nb_sub = models.BooleanField(default=True)
     mob_net = models.BooleanField(default=True)
     camera = models.BooleanField(default=True)
     full_class = models.BooleanField(default=True)
-    activities = models.CharField(null=True, blank=True)
+    activities = models.CharField(null=True, blank=True, max_length=100)
     engagement = models.BooleanField(default=True)
     overall_performance_percentage = models.FloatField(null=True, blank=True)
-    overall_performance = models.CharField(null=True, blank=True)
+    overall_performance = models.CharField(null=True, blank=True, max_length=100)
     remarks = models.TextField(null=True, blank=True)
     
     
