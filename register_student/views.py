@@ -179,37 +179,37 @@ class ClassMethods(APIView):
             return Response({"message": "Internal failure"}, status=status.HTTP_400_BAD_REQUEST)
         
     def delete(self, request):
-        try:
-            
             class_id = request.query_params.get('id')
-            
-            if class_id:
-                class_instance = class_details.objects.filter(id=class_id).first()
-                
-                if class_instance:
-                    
-                    app_name = 'register_student_'
-                    
-                    table_name = f"{class_instance.batch_year}_{class_instance.class_name}_{class_instance.division}".replace(" ","").lower()
-                    
-                    feature_group_id = ['_examresults', '_leaderboard', '_attendance', '_dailyupdates']
-                    
-                    for row in feature_group_id:
-                        try:
-                            cursor = connection.cursor()
-                            cursor.execute(f"DROP TABLE {app_name+app_name+table_name+row}")
-                            print(f'Table {app_name+app_name+table_name+row} deleted')
-                            
-                        except DatabaseError as e:
-                            print(f'Error deleting table {app_name+app_name+table_name+row}: {str(e)}')  
-                    class_instance.delete()
-                    return Response({"message": "Class group deleted successfully"}, status=status.HTTP_200_OK)
-                else:
-                    return Response({"message": "Class group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
+            if not class_id:
                 return Response({"message": "Class ID not provided"}, status=status.HTTP_400_BAD_REQUEST)
-        except:
-            return Response({"message": "Internal failure"}, status=status.HTTP_400_BAD_REQUEST)
+
+            class_instance = class_details.objects.filter(id=class_id).first()
+            if not class_instance:
+                return Response({"message": "Class group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+            app_name = 'register_student_'
+            table_name = f"{class_instance.batch_year}_{class_instance.class_name}_{class_instance.division}".replace(" ", "").lower()
+            feature_group_id = ['_examresults', '_leaderboard', '_attendance', '_dailyupdates']
+
+            try:
+                with connection.cursor() as cursor:
+                    for row in feature_group_id:
+                        table_name_to_check = f"{app_name}{table_name}{row}"
+                        cursor.execute(f"SELECT to_regclass(%s)", [table_name_to_check])
+                        result = cursor.fetchone()
+                        if result and result[0] is not None:
+                            cursor.execute(f"DROP TABLE {table_name_to_check}")
+                            print(f'Table {table_name_to_check} deleted')
+                        else:
+                            print(f'Table {table_name_to_check} does not exist')
+
+                class_instance.delete()
+                print(f'Class group {class_instance} deleted')
+
+                return Response({"message": "Class group deleted successfully"}, status=status.HTTP_200_OK)
+
+            except DatabaseError as e:
+                return Response({"message": f"Error deleting tables: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         
 class StudentBulkMethods(APIView):

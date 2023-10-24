@@ -3,7 +3,7 @@ from register_student.models import Student
 
 class ChatRoom(models.Model):
     admission_no = models.CharField(max_length=100, unique=True)
-    superuser = models.ForeignKey(Student, on_delete=models.DO_NOTHING)
+    superuser = models.IntegerField()
 
     def __str__(self):
         return self.name
