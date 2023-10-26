@@ -39,8 +39,8 @@ class AddExamResult(APIView):
 
 
             app_name = 'register_student_'
-            table_name_examresults = app_name + app_name+  batch_year + "_" + class_name + "_" + division + "_examresults"
-            table_name_leaderboard = app_name + '_' + app_name+ '_'+ batch_year + "_" + class_name + "_" + division + "_leaderboard"
+            table_name_examresults = app_name + app_name +  batch_year + "_" + class_name + "_" + division + "_examresults"
+            table_name_leaderboard = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
             
             cursor = connection.cursor()
             cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
