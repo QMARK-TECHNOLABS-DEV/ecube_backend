@@ -194,14 +194,11 @@ class ClassMethods(APIView):
             try:
                 with connection.cursor() as cursor:
                     for row in feature_group_id:
-                        table_name_to_check = f"{app_name}{table_name}{row}"
-                        cursor.execute(f"SELECT to_regclass(%s)", [table_name_to_check])
-                        result = cursor.fetchone()
-                        if result and result[0] is not None:
-                            cursor.execute(f"DROP TABLE {table_name_to_check}")
-                            print(f'Table {table_name_to_check} deleted')
-                        else:
-                            print(f'Table {table_name_to_check} does not exist')
+                        table_name_to_check = f"{app_name}{app_name}{table_name}{row}"
+
+                        cursor.execute(f"DROP TABLE public.{table_name_to_check}")
+                        print(f'Table {table_name_to_check} deleted')
+
 
                 class_instance.delete()
                 print(f'Class group {class_instance} deleted')
