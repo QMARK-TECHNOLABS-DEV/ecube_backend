@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db import connection
-from register_student.models import Student
+from register_student.models import Student, class_details
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 import pandas as pd
@@ -260,3 +260,119 @@ class GetDailyUpdate(APIView):
             
         return Response({'daily_updates': daily_updates}, status=status.HTTP_200_OK)
         
+        
+class AdminGetDates(APIView):
+    def get(self,request):
+        user_id = request.GET.get('user_id')
+        
+        if not user_id:
+            return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+        # Generate a new access token
+        user = Student.objects.get(id=user_id)
+        
+        batch_year = user.batch_year
+        class_name = user.class_name
+        division = user.division
+        
+        if batch_year is None or class_name is None or division is None:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        class_details_instance = class_details.objects.filter(batch_year=batch_year, class_name=class_name, division=division).first()
+        
+        if not class_details_instance:
+            return Response({'status': 'failure', 'message': 'Invalid class details'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "").lower()
+        division = str(division).replace(" ", "").lower()
+
+        app_name = 'register_student'
+        
+        table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_dailyupdates"
+        
+        try:
+            cursor = connection.cursor()
+            
+            cursor.execute(f"SELECT DISTINCT date, TO_DATE(date, 'DD/MM/YYYY') AS parsed_date FROM public.{table_name} ORDER BY parsed_date DESC")
+
+            dates = cursor.fetchall()
+            
+        except Exception as e:
+            # Handle exceptions here
+            print(f"Error: {str(e)}")
+            return Response({'message': 'Failed to save data'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+        dates_list = []
+        
+        for date in dates:
+            dates_list.append(date[0])
+            
+        return Response({'dates': dates_list}, status=status.HTTP_200_OK)
+    
+    
+
+class AdminGetDailyUpdate(APIView):
+    def get(self,request):
+        user_id = request.GET.get('user_id')
+        date = request.GET.get('date')
+        
+        if not user_id:
+            return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        user = Student.objects.get(id=user_id)
+        
+        
+        batch_year = user.batch_year
+        class_name = user.class_name
+        division = user.division
+        
+        if batch_year is None or class_name is None or division is None:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        class_details_instance = class_details.objects.filter(batch_year=batch_year, class_name=class_name, division=division).first()
+        
+        if not class_details_instance:
+            return Response({'status': 'failure', 'message': 'Invalid class details'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "").lower()
+        division = str(division).replace(" ", "").lower()
+
+        app_name = 'register_student'
+        
+        table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_dailyupdates"
+        
+        cursor = connection.cursor()
+        
+        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND admission_no = %s", [date, user.admission_no])
+        
+        
+        query_result = cursor.fetchall()
+        
+        
+        cursor.close()
+        
+        daily_updates = []
+        
+        for row in query_result:
+            daily_update = {
+                "admission_no": row[1],
+                "date": row[2],
+                "on_time": row[3],
+                "voice": row[4],
+                "nb_sub": row[5],
+                "mob_net": row[6],
+                "camera": row[7],
+                "full_class": row[8],
+                "activities": row[9],
+                "engagement": row[10],
+                "overall_performance_percentage": row[11],
+                "overall_performance": row[12],
+                "remarks": row[13]
+            }
+            
+            daily_updates.append(daily_update)
+            
+        return Response({'daily_updates': daily_updates}, status=status.HTTP_200_OK)
+    
