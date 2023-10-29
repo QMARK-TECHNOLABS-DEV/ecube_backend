@@ -35,7 +35,13 @@ class SendOTP(APIView):
                 # Generate a random OTP (6 digits)
                 try:
                     otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-
+                    
+                    otp_instance = OTP.objects.filter(phone_number=phone_number)
+                    
+                    if otp_instance:
+                        for otp in otp_instance:
+                            otp.delete()
+                        
                     OTP.objects.create(phone_number=phone_number, code=otp)
                     
                     response = sendSMS(otp, phone_number)
