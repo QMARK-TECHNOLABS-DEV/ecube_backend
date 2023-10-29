@@ -15,5 +15,4 @@ class Token(models.Model):
 class OTP(models.Model):
     phone_number = models.CharField(max_length=15)
     code = models.CharField(max_length=6)
-    expiry_time = models.DateTimeField()
-    
+    expiry_time = models.DateTimeField(auto_now_add=True)

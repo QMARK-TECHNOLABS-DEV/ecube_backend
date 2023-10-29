@@ -22,19 +22,21 @@ class SendOTP(APIView):
         if not phone_number:
             return Response({'message': 'Invalid phone_number'}, status=400)
         
-        if phone_number != '1234567890':
-            db_phone_number = Student.objects.filter(phone_no=phone_number).first()
+      
+        print(phone_number, type(phone_number))
+        db_phone_number = Student.objects.filter(phone_no=phone_number).first()
+        
+        print(db_phone_number)
+        if db_phone_number:
             
-            if db_phone_number:
+         
+            
+            if str(db_phone_number.phone_no) != '1234567890':
                 # Generate a random OTP (6 digits)
                 try:
                     otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-                    
-                    
-                    # Store OTP in session
-                    expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
-                    OTP.objects.create(phone_number=phone_number, code=otp, expiry_time=expiry_time)
+                    OTP.objects.create(phone_number=phone_number, code=otp)
                     
                     response = sendSMS(otp, phone_number)
                     
@@ -55,22 +57,18 @@ class SendOTP(APIView):
                 except Exception as e:
                     print(e)
                     return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            else:
-                return Response({'message': 'Invalid phone_number'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        else:
-            
-            try:
-                otp = '123456'
-                expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
-
-                OTP.objects.create(phone_number=phone_number, code=otp, expiry_time=expiry_time)
+            else:           
                 
-                return Response({'message': 'OTP sent successfully'})
-            
-            except Exception as e:
-                print(e)
-                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                otp = '123456'
+           
+                
+                print(otp)
+                OTP.objects.create(phone_number=phone_number, code=otp)
+                
+                return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+                
+        else:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         
         
 class VerifyOTP(APIView):
@@ -78,13 +76,13 @@ class VerifyOTP(APIView):
         # Get the OTP entered by the user from the request data
         entered_otp = request.data.get('otp')
         phone_number = request.data.get('phone_number')
-        # Get the OTP and its expiry timestamp from the session
+        
         try:
-            otp = OTP.objects.get(phone_number=phone_number)
+            otp = OTP.objects.filter(phone_number=phone_number).first()
             
             # Ensure both times are in the same timezone-aware format
             current_time = timezone.now()  # Get the current time in the same timezone
-            expiry_time = otp.expiry_time
+            expiry_time = otp.expiry_time + timedelta(minutes=5)  # Add 5 minutes to expiry_time
             
             if expiry_time > current_time:
                 if entered_otp == str(otp.code):
