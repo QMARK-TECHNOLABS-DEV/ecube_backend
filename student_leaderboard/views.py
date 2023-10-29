@@ -6,6 +6,46 @@ from register_student.models import Student
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 
+
+class AdminGetLeaderBoard(APIView):
+    def get(self, request):
+        
+        batch_year = request.GET.get('batch_year')
+        class_name = request.GET.get('class_name')
+        division = request.GET.get('division')
+        subject = request.GET.get('subject')
+
+        if batch_year is None or class_name is None or division is None:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "")
+        class_name = str(class_name).lower()
+        division = str(division).replace(" ", "")
+        division = str(division).lower()
+
+        app_name = 'register_student_'
+        table_name = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
+
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} WHERE admission_no IS NOT NULL AND {subject} IS NOT NULL ORDER BY {subject} DESC NULLS LAST LIMIT 10;")
+        query_results = cursor.fetchall()
+        cursor.close()
+        
+        leaderboard = []
+
+        for row in query_results:     
+            other_student = Student.objects.get(admission_no=row[0])
+            
+            leaderboard.append({
+                "admission_no": row[0],
+                "mark": row[1],
+                "name": other_student.name,
+                "profile_image": "",
+            })
+
+        return Response({'leaderboard': leaderboard}, status=status.HTTP_200_OK)
+    
 class GetLeaderBoard(APIView):
     def get(self, request):
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
@@ -57,12 +97,6 @@ class GetLeaderBoard(APIView):
         cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} WHERE admission_no IS NOT NULL AND {subject} IS NOT NULL ORDER BY {subject} DESC NULLS LAST LIMIT 10;")
         query_results = cursor.fetchall()
         cursor.close()
-        
-        # cursor = connection.cursor()
-        # cursor.execute(f"SELECT DENSE_RANK() OVER (ORDER BY {subject} DESC NULLS LAST) FROM public.{table_name} WHERE admission_no = %s;", [user.admission_no])
-        
-        # rank_result = cursor.fetchone()
-        # cursor.close()
         
         leaderboard = []
         
