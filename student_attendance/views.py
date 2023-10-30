@@ -374,6 +374,11 @@ class GetAttendanceYearStatus(APIView):
             if batch_year is None or class_name is None or division is None:
                 return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
             
+            class_details_instance = class_details.objects.filter(batch_year=batch_year, class_name=class_name, division=division).first()
+            
+            if class_details_instance is None:
+                return Response({'status': 'failure', 'message': 'Class does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            
             batch_year = str(batch_year)
             class_name = str(class_name).replace(" ", "")
             class_name = str(class_name).lower()

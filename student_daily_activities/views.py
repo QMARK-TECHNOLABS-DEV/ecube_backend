@@ -239,21 +239,41 @@ class GetDailyUpdate(APIView):
         
         daily_updates = []
         
-        for row in query_result:
+        if query_result:
+            for row in query_result:
+                daily_update = {
+                    "admission_no": row[1],
+                    "date": row[2],
+                    "on_time": row[3],
+                    "voice": row[4],
+                    "nb_sub": row[5],
+                    "mob_net": row[6],
+                    "camera": row[7],
+                    "full_class": row[8],
+                    "activities": row[9],
+                    "engagement": row[10],
+                    "overall_performance_percentage": row[11],
+                    "overall_performance": row[12],
+                    "remarks": row[13]
+                }
+                
+                daily_updates.append(daily_update)
+                
+        else:
             daily_update = {
-                "admission_no": row[1],
-                "date": row[2],
-                "on_time": row[3],
-                "voice": row[4],
-                "nb_sub": row[5],
-                "mob_net": row[6],
-                "camera": row[7],
-                "full_class": row[8],
-                "activities": row[9],
-                "engagement": row[10],
-                "overall_performance_percentage": row[11],
-                "overall_performance": row[12],
-                "remarks": row[13]
+                "admission_no": user.admission_no,
+                "date": date,
+                "on_time": False,
+                "voice": False,
+                "nb_sub": False,
+                "mob_net": False,
+                "camera": False,
+                "full_class": False,
+                "activities": 0,
+                "engagement": False,
+                "overall_performance_percentage": 0,
+                "overall_performance": "POOR",
+                "remarks": ""
             }
             
             daily_updates.append(daily_update)
@@ -355,21 +375,41 @@ class AdminGetDailyUpdate(APIView):
         
         daily_updates = []
         
-        for row in query_result:
+        if query_result:
+            for row in query_result:
+                daily_update = {
+                    "admission_no": row[1],
+                    "date": row[2],
+                    "on_time": row[3],
+                    "voice": row[4],
+                    "nb_sub": row[5],
+                    "mob_net": row[6],
+                    "camera": row[7],
+                    "full_class": row[8],
+                    "activities": row[9],
+                    "engagement": row[10],
+                    "overall_performance_percentage": row[11],
+                    "overall_performance": row[12],
+                    "remarks": row[13]
+                }
+                
+                daily_updates.append(daily_update)
+                
+        else:
             daily_update = {
-                "admission_no": row[1],
-                "date": row[2],
-                "on_time": row[3],
-                "voice": row[4],
-                "nb_sub": row[5],
-                "mob_net": row[6],
-                "camera": row[7],
-                "full_class": row[8],
-                "activities": row[9],
-                "engagement": row[10],
-                "overall_performance_percentage": row[11],
-                "overall_performance": row[12],
-                "remarks": row[13]
+                "admission_no": user.admission_no,
+                "date": date,
+                "on_time": False,
+                "voice": False,
+                "nb_sub": False,
+                "mob_net": False,
+                "camera": False,
+                "full_class": False,
+                "activities": 0,
+                "engagement": False,
+                "overall_performance_percentage": 0,
+                "overall_performance": "POOR",
+                "remarks": ""
             }
             
             daily_updates.append(daily_update)
