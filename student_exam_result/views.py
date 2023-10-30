@@ -269,3 +269,99 @@ class ExamResultsView(APIView):
         except Exception as e:
             print(e)
             return Response({'status': 'failure', 'message': 'Internal error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+class AdminExamResultsView(APIView):
+    def get(self, request):
+        
+        user_id = request.GET.get('user_id')
+        
+        if not user_id:
+            return Response({'error': 'The user id is not provided in the params.'}, status=status.HTTP_401_UNAUTHORIZED)
+        # Generate a new access token
+        user = Student.objects.get(id=user_id) 
+        
+        batch_year = user.batch_year
+        class_name = user.class_name
+        division = user.division
+        admission_no = user.admission_no
+        
+        if batch_year is None or class_name is None or division is None:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "").lower()
+        division = str(division).replace(" ", "").lower()
+
+        app_name = 'register_student'
+        table_name_examresults = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_examresults"
+
+        try:
+            cursor = connection.cursor()
+
+            # Modify the SQL query to retrieve marks for each subject in every exam for the specific admission number
+            cursor.execute(f"""
+                SELECT DISTINCT subject
+                FROM (
+                    SELECT 'physics' AS subject
+                    UNION ALL
+                    SELECT 'chemistry' AS subject
+                    UNION ALL
+                    SELECT 'maths' AS subject
+                ) AS subjects
+            """)
+            subject_results = cursor.fetchall()
+
+            exams_data = []
+
+            for subject in subject_results:
+                subject = subject[0]  # Extract the subject name
+                cursor.execute(f"""
+                    SELECT exam_name, marks
+                    FROM (
+                        SELECT admission_no,
+                               exam_name,
+                               'physics' AS subject,
+                               physics AS marks
+                        FROM public.{table_name_examresults}
+                        UNION ALL
+                        SELECT admission_no,
+                               exam_name,
+                               'chemistry' AS subject,
+                               chemistry AS marks
+                        FROM public.{table_name_examresults}
+                        UNION ALL
+                        SELECT admission_no,
+                               exam_name,
+                               'maths' AS subject,
+                               maths AS marks
+                        FROM public.{table_name_examresults}
+                    ) AS subquery
+                    WHERE admission_no = '{admission_no}' AND subject = '{subject}'  -- Filter by admission_no and subject
+                """)
+                subject_data = cursor.fetchall()
+
+                exams_data.append({
+                    'subject': subject,
+                    'data': [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data]
+                })
+
+            cursor.close()
+
+            if not exams_data:
+                return Response({'status': 'failure', 'message': 'No exam results found for the specified admission_no'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculate the total number of exams
+            total_exams = sum(len(subject['data']) for subject in exams_data)
+
+            # Create the final response structure
+            response_data = {
+                'no_of_exams': str(total_exams),  # Number of exams is the sum of all subject exams
+                'results': exams_data
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(e)
+            return Response({'status': 'failure', 'message': 'Internal error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
