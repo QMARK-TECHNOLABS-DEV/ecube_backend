@@ -274,7 +274,20 @@ class StudentBulkMethods(APIView):
             return Response({'all_users':serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Message': 'Internal failure', 'error': str(e)} ,status=status.HTTP_400_BAD_REQUEST)
-    
+ 
+class GetAllStudents(APIView):
+     def get(self, request):
+        try:
+            students = Student.objects.all()
+            serializer = StudentSerializer(students, many=True)
+            
+            if serializer.data == []:
+                return Response({'Message': 'No records found'} ,status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            return Response({'all_users':serializer.data}, status=status.HTTP_200_OK) 
+        except Exception as e:
+            return Response({'Message': 'Internal failure', 'error': str(e)} ,status=status.HTTP_400_BAD_REQUEST) 
     
 class ExamStudentDisplay(APIView):
     def get(self, request):
