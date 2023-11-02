@@ -114,6 +114,7 @@ class VerifyOTP(APIView):
             else:
                 otp.delete()
                 return Response({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
+            
         except OTP.DoesNotExist:
             # Session data for OTP not found
             return Response({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)

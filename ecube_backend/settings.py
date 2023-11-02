@@ -61,7 +61,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "https://localhost:3000",
     "https://localhost:4200",
-    
+    "https://ecube-test-67149.web.app",
 ]
 
 LOGIN_REDIRECT_URL = 'chat-page'

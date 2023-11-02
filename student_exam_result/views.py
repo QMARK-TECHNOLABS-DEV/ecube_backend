@@ -8,12 +8,12 @@ from django.http import JsonResponse
 from django.db import connection
 import pandas as pd
 
-class AddExamResult(APIView):
+class ExamResult(APIView):
     def post(self,request):
         try:
-            batch_year = request.GET.get('batch_year')
-            class_name = request.GET.get('class_name')
-            division = request.GET.get('division')
+            batch_year = request.query_params.get('batch_year')
+            class_name = request.query_params.get('class_name')
+            division = request.query_params.get('division')
             
             if batch_year is None or class_name is None or division is None:
                 return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -24,66 +24,306 @@ class AddExamResult(APIView):
             division = str(division).replace(" ", "")
             division = str(division).lower()
             
-            admission_no = request.data['admission_no']
-            exam_name = request.data['exam_name']
-            physics = request.data['physics']
-            chemistry = request.data['chemistry']
-            maths = request.data['maths']
-            
-            physics = None if physics is None else physics
-            chemistry = None if chemistry is None else chemistry
-            maths = None if maths is None else maths
-            
-            if (admission_no is None or admission_no == "") or (exam_name is None or exam_name == ""):
-                return Response({'status': 'failure', 'message': 'admission_no and exam_name are required'}, status=status.HTTP_400_BAD_REQUEST)
+            data = request.data  # Get the JSON array from the request body
 
+            if not isinstance(data, list):
+                return Response({'status': 'failure', 'message': 'Request body should be a JSON array'}, status=status.HTTP_400_BAD_REQUEST)
 
             app_name = 'register_student_'
-            table_name_examresults = app_name + app_name +  batch_year + "_" + class_name + "_" + division + "_examresults"
+            table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_examresults"
             table_name_leaderboard = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
-            
-            cursor = connection.cursor()
-            cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
-            query_results = cursor.fetchone()
-            
-            if query_results is None:
-            
+
+            for item in data:
+                admission_no = item.get('admission_no')
+                exam_name = item.get('exam_name')
+                physics = item.get('physics')
+                chemistry = item.get('chemistry')
+                maths = item.get('maths')
+
+                if admission_no is None or exam_name is None:
+                    return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Insert data into the database for each item in the JSON array
                 cursor = connection.cursor()
-                cursor.execute(f"INSERT INTO public.{table_name_examresults} (admission_no, exam_name, physics, chemistry, maths) VALUES (%s, %s, %s, %s, %s)", [admission_no, exam_name, physics, chemistry, maths])
-                cursor.close()
-                
-                cursor = connection.cursor()
-                cursor.execute(f"SELECT * FROM public.{table_name_leaderboard} WHERE admission_no = %s", [admission_no])
-                
+                cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
                 query_results = cursor.fetchone()
-                cursor.close()
-                
-                print("Query Results:", query_results)
-                
-                try:
-                    if query_results is None:
-                        print("Inserting into the table")
-                        cursor = connection.cursor()
-                        cursor.execute(f"INSERT INTO public.{table_name_leaderboard} (admission_no, physics, chemistry, maths) VALUES (%s, %s, %s, %s)", [admission_no, physics, chemistry, maths])
-                        
-                    else:
-                        cursor = connection.cursor()
-                        cursor.execute(f"UPDATE public.{table_name_leaderboard} SET physics = physics + %s, chemistry = chemistry + %s, maths = maths + %s WHERE admission_no = %s", [physics, chemistry, maths, admission_no])
-                    
-                    
+
+                if query_results is None:
+                    cursor.execute(f"INSERT INTO public.{table_name_examresults} (admission_no, exam_name, physics, chemistry, maths) VALUES (%s, %s, %s, %s, %s)", [admission_no, exam_name, physics, chemistry, maths])
                     cursor.close()
-                    
-                    return Response({'status': 'success'}, status=status.HTTP_200_OK)
-                
-                except:
-                    return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
-                
-            else:
-                return Response({'status': 'failure', 'message': 'Exam already marked for student'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+                    cursor = connection.cursor()
+                    cursor.execute(f"SELECT * FROM public.{table_name_leaderboard} WHERE admission_no = %s", [admission_no])
+                    query_results = cursor.fetchone()
+                    cursor.close()
+
+                    print("Query Results:", query_results)
+
+                    try:
+                        if query_results is None:
+                            print("Inserting into the table")
+                            cursor = connection.cursor()
+                            cursor.execute(f"INSERT INTO public.{table_name_leaderboard} (admission_no, physics, chemistry, maths) VALUES (%s, %s, %s, %s)", [admission_no, physics, chemistry, maths])
+                        else:
+                            cursor = connection.cursor()
+                            cursor.execute(f"UPDATE public.{table_name_leaderboard} SET physics = physics + %s, chemistry = chemistry + %s, maths = maths + %s WHERE admission_no = %s", [physics, chemistry, maths, admission_no])
+
+                        cursor.close()
+
+                    except Exception as e:
+                        return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry, and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+
         except Exception as e:
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+        
+    def put(self, request):
+        try:
+            batch_year = request.query_params.get('batch_year')
+            class_name = request.query_params.get('class_name')
+            division = request.query_params.get('division')
+            
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+            
+            data = request.data  # Get the JSON array from the request body
+            
+            if not isinstance(data, list):
+                return Response({'status': 'failure', 'message': 'Request body should be a JSON array'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            app_name = 'register_student_'
+            
+            table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_examresults"
+            table_name_leaderboard = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
+            
+            for item in data:
+                admission_no = item.get('admission_no')
+                exam_name = item.get('exam_name')
+                physics = item.get('physics')
+                chemistry = item.get('chemistry')
+                maths = item.get('maths')
+
+                if admission_no is None or exam_name is None:
+                    return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Insert data into the database for each item in the JSON array
+                cursor = connection.cursor()
+                cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
+                query_results = cursor.fetchone()
+                
+                if query_results:
+                    cursor.execute(f"UPDATE public.{table_name_examresults} SET physics = %s, chemistry = %s, maths = %s WHERE admission_no = %s AND exam_name = %s", [physics, chemistry, maths, admission_no, exam_name])
+                    cursor.close() 
+                    
+                    cursor = connection.cursor()
+                    cursor.execute(f"SELECT * FROM public.{table_name_leaderboard} WHERE admission_no = %s", [admission_no])
+                    query_results = cursor.fetchone()
+                    cursor.close()
+
+                    print("Query Results:", query_results)
+
+                    try:
+                        if query_results:
+                            print("Updating the table")
+                            cursor = connection.cursor()
+                            cursor.execute(f"SELECT physics, chemistry, maths FROM public.{table_name_examresults} WHERE admission_no = %s", [admission_no])
+                            query_results = cursor.fetchall()
+                            cursor.close()
+
+                            # Calculate the sum of marks for each subject
+                            total_physics = sum([result[0] for result in query_results])
+                            total_chemistry = sum([result[1] for result in query_results])
+                            total_maths = sum([result[2] for result in query_results])
+
+                            # Update the leaderboard
+                            cursor = connection.cursor()
+                            cursor.execute(f"UPDATE public.{table_name_leaderboard} SET physics = %s, chemistry = %s, maths = %s WHERE admission_no = %s", [total_physics, total_chemistry, total_maths, admission_no])
+                            cursor.close()
+
+                    except Exception as e:
+                        return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry, and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    
+    def delete(self, request):
+        try:
+            batch_year = request.query_params.get('batch_year')
+            class_name = request.query_params.get('class_name')
+            division = request.query_params.get('division')
+            
+            
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+            
+            data = request.data  # Get the JSON array from the request body
+            
+            if not isinstance(data, list):
+                return Response({'status': 'failure', 'message': 'Request body should be a JSON array'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            app_name = 'register_student_'
+            
+            table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_examresults"
+            table_name_leaderboard = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
+            
+            for item in data:
+                admission_no = item.get('admission_no')
+                exam_name = item.get('exam_name')
+                physics = item.get('physics')
+                chemistry = item.get('chemistry')
+                maths = item.get('maths')
+
+                if admission_no is None or exam_name is None:
+                    return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Insert data into the database for each item in the JSON array
+                cursor = connection.cursor()
+                cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
+                query_results = cursor.fetchone()
+                
+                if query_results:
+                    cursor.execute(f"DELETE FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
+                    cursor.close() 
+                    
+                    cursor = connection.cursor()
+                    cursor.execute(f"SELECT * FROM public.{table_name_leaderboard} WHERE admission_no = %s", [admission_no])
+                    query_results = cursor.fetchone()
+                    cursor.close()
+
+                    print("Query Results:", query_results)
+
+                    try:
+                        if query_results:
+                            print("Updating the table")
+                            cursor = connection.cursor()
+                            cursor.execute(f"SELECT physics, chemistry, maths FROM public.{table_name_examresults} WHERE admission_no = %s", [admission_no])
+                            query_results = cursor.fetchall()
+                            cursor.close()
+
+                            # Calculate the sum of marks for each subject
+                            total_physics = sum([result[0] for result in query_results])
+                            total_chemistry = sum([result[1] for result in query_results])
+                            total_maths = sum([result[2] for result in query_results])
+
+                            # Update the leaderboard
+                            cursor = connection.cursor()
+                            cursor.execute(f"UPDATE public.{table_name_leaderboard} SET physics = %s, chemistry = %s, maths = %s WHERE admission_no = %s", [total_physics, total_chemistry, total_maths, admission_no])
+                            cursor.close()
+
+                    except Exception as e:
+                        return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry, and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+    def get(self, request):
+        try:
+            batch_year = request.query_params.get('batch_year')
+            class_name = request.query_params.get('class_name')
+            division = request.query_params.get('division')
+            exam_type = request.query_params.get('exam_type')
+            
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+            
+            
+            app_name = 'register_student_'
+            
+            table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_examresults"
+            
+            if not exam_type:
+                cursor = connection.cursor()
+                cursor.execute(f"SELECT * FROM public.{table_name_examresults}")
+                query_results = cursor.fetchall()
+            else:   
+                cursor = connection.cursor()
+                cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE exam_name = %s", [exam_type])
+                query_results = cursor.fetchall()
+            
+            cursor.close()
+            
+            exam_results = []
+            if query_results:
+                for result in query_results:
+                    student_instance = Student.objects.get(admission_no=result[1])
+                    
+                    exam_results.append({
+                        'user_id': student_instance.id,
+                        'name': student_instance.name,
+                        'admission_no': result[1],
+                        'exam_name': result[2],
+                        'physics': result[3],
+                        'chemistry': result[4],
+                        'maths': result[5]
+                    })
+            
+            return Response({'result_data': exam_results}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+class GetExamType(APIView):
+    def get(self,request):
+        try:
+            batch_year = request.query_params.get('batch_year')
+            class_name = request.query_params.get('class_name')
+            division = request.query_params.get('division')
+            
+            
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+            
+            
+            app_name = 'register_student_'
+            
+            table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_examresults"
+            
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT DISTINCT exam_name FROM public.{table_name_examresults}")
+            query_results = cursor.fetchall()
+            
+            if query_results:
+                exam_types = [result[0] for result in query_results]
+                return Response({'exam_types': exam_types}, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class AddExamResultBulk(APIView):
     def post(self, request):
         batch_year = request.GET.get('batch_year')
