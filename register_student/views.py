@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
 from .models import Student, create_tables, class_details
-from .serializers import ClassDetailsSerializer, StudentSerializer, ExamStudentDisplaySerializer
+from .serializers import ClassDetailsSerializer, StudentSerializer, ExamStudentDisplaySerializer, StudentDisplaySerializer
 import pandas as pd
 from django.db import connection, DatabaseError
 
@@ -265,7 +265,7 @@ class StudentBulkMethods(APIView):
             division = request.query_params.get('division')
             
             students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division)
-            serializer = ExamStudentDisplaySerializer(students, many=True)
+            serializer = StudentDisplaySerializer(students, many=True)
             
             if serializer.data == []:
                 return Response({'Message': 'No records found'} ,status=status.HTTP_400_BAD_REQUEST)
@@ -276,4 +276,20 @@ class StudentBulkMethods(APIView):
             return Response({'Message': 'Internal failure', 'error': str(e)} ,status=status.HTTP_400_BAD_REQUEST)
     
     
-    
+class ExamStudentDisplay(APIView):
+    def get(self, request):
+        try:
+            batch_year = request.query_params.get('batch_year')
+            class_name = request.query_params.get('class_name')
+            division = request.query_params.get('division')
+            
+            students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division)
+            serializer = ExamStudentDisplaySerializer(students, many=True)
+            
+            if serializer.data == []:
+                return Response({'Message': 'No records found'} ,status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            return Response({'all_users':serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': 'Internal failure', 'error': str(e)} ,status=status.HTTP_400_BAD_REQUEST)
