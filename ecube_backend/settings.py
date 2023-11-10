@@ -60,11 +60,14 @@ INSTALLED_APPS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:4200",
+    "http://sapadminportal.online.s3-website-us-east-1.amazonaws.com",
     "https://localhost:3000",
     "https://localhost:4200",
     "https://ecube-test-67149.web.app",
-    "https://ecube-test-67149.firebaseapp.com"
-]
+    "https://ecube-test-67149.firebaseapp.com",
+  ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 LOGIN_REDIRECT_URL = 'chat-page'
 
