@@ -161,6 +161,7 @@ class LoginUser(APIView):
                     user_token.delete()
                     
                 if check_password(request.data['password'], user.password):
+                    print("Password is correct")
                     # Generate refresh and access tokens
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
                     

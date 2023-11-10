@@ -25,6 +25,7 @@ urlpatterns = [
     path('student_attendance/', include('student_attendance.urls')),
     path('student_exam_result/', include('student_exam_result.urls')),
     path('student_leaderboard/', include('student_leaderboard.urls')),
+    path('class/updates/', include('class_updates.urls')),
     path('student_daily_activities/', include('student_daily_activities.urls')),
     path('student_dashboard/', include('student_dashboard.urls')),
     path('admin_auth/', include('admin_auth.urls')),

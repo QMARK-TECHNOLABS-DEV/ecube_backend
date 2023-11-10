@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'class_management',
     'corsheaders',
     'chat_system',
+    'class_updates',
     'daphne',
     'django.contrib.staticfiles',
 ]

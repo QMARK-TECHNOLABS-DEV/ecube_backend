@@ -6,8 +6,6 @@ from register_student.models import Student, class_details
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 from django.http import JsonResponse
-from collections import defaultdict
-from datetime import datetime
 import pandas as pd
 
 class AddAttendance(APIView):
@@ -295,9 +293,9 @@ class GetAttendance(APIView):
 
         app_name = 'register_student'
         table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
-
+        
+        print(user.admission_no)
         month_year_number = request.GET.get('month_year_number')
-
         cursor = connection.cursor()
         cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s;", [user.admission_no, month_year_number])
         query_result = cursor.fetchall()
@@ -320,13 +318,15 @@ class GetAttendance(APIView):
         for row in query_result:
             id, admission_no, month_year, date, status_att = row
             date_obj = date_string_to_object(date)
+            print(status_att)
             attendance_data[date] = status_att
 
         # Iterate through distinct_dates and mark absent if date is missing in attendance_data
         for date in distinct_dates:
             if date not in attendance_data:
                 attendance_data[date] = "A"
-
+                
+        print(attendance_data)
         # Create the final response dictionary
         present_days = [date_string_to_object(date) for date, status_att in attendance_data.items() if status_att == "P"]
         absent_days = [date_string_to_object(date) for date, status_att in attendance_data.items() if status_att == "A"]

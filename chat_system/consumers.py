@@ -204,7 +204,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         username = text_data_json["username"]
         
         
-        
         self.messages.append({
             "message": message,
             "username": username,
