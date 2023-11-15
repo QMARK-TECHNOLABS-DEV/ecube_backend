@@ -7,5 +7,6 @@ class class_updates_link(models.Model):
     subject = models.CharField(max_length=100)
     link = models.CharField(max_length=100)
     topic = models.CharField(max_length=100)
-    date = models.DateField(auto_now_add=True)
+    class_time = models.CharField(max_length=10, default="")
+    date = models.CharField(max_length=10)
     upload_time = models.DateTimeField(auto_now_add=True)

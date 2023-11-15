@@ -16,6 +16,8 @@ class Class_Updates_Admin(APIView):
         data['division'] = data['division'].upper()
         data['subject'] = data['subject'].upper()
         data['topic'] = data['topic'].upper()
+        data['date'] = data['date'].upper()
+        data['class_time'] = data['class_time'].upper()
         
         serializer = class_updates_link_serializer(data=data)
         if serializer.is_valid():
@@ -49,23 +51,25 @@ class Class_Updates_Admin(APIView):
     def put(self, request):
         link_id = request.query_params.get('link_id')
         
-        if link_id == None:
+        if link_id is None:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
                 queryset = class_updates_link.objects.get(id=link_id)
-            except:
+            except class_updates_link.DoesNotExist:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             
-            data=request.data
+            data = request.data
             data['class_name'] = data['class_name'].upper()
             data['batch_year'] = data['batch_year'].upper()
             data['division'] = data['division'].upper()
             data['subject'] = data['subject'].upper()
             data['topic'] = data['topic'].upper()
             
-            serializer = class_updates_link_serializer(queryset, data=data)
+            # Update upload_time
+            data['upload_time'] = timezone.now().strftime('%Y-%m-%dT%H:%M:%SZ')
             
+            serializer = class_updates_link_serializer(queryset, data=data)
             
             if serializer.is_valid():
                 serializer.save()
@@ -132,18 +136,10 @@ class Class_Update_Client_Side(APIView):
             division = division.upper()
             
             queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
-            
-            current_time = timezone.now()
-            
-            cutoff_time = current_time - timedelta(minutes=1)
+       
             if queryset == []:
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                
-                for record in queryset:
-                    if record.upload_time < cutoff_time:
-                        record.delete()
-                        
+            else:                  
                 queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
                    
                 serializer = class_updates_link_get_serializer(queryset, many=True)
@@ -151,4 +147,4 @@ class Class_Update_Client_Side(APIView):
             if serializer.data == []:
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                return Response({"class_links":serializer.data}, status=status.HTTP_200_OK)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"class_links":serializer.data}, status=status.HTTP_200_OK)
