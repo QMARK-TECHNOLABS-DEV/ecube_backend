@@ -10,3 +10,8 @@ class class_updates_link(models.Model):
     class_time = models.CharField(max_length=10, default="")
     date = models.CharField(max_length=10)
     upload_time = models.DateTimeField(auto_now_add=True)
+    
+class announcements(models.Model):
+    announcement = models.CharField(max_length=100)
+    upload_date = models.CharField(max_length=10)
+    upload_time = models.DateTimeField(auto_now_add=True)

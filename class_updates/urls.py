@@ -7,4 +7,5 @@ urlpatterns = [
     path('update/link/', views.Class_Updates_Admin.as_view(), name='update_link'),
     path('delete/link/', views.Class_Updates_Admin.as_view(), name='delete_link'),
     path('client/get/link/', views.Class_Update_Client_Side.as_view(), name='client_get_link'),
+    path('announcement/operation/', views.Announcements.as_view(), name='announcement_operation'),
 ]

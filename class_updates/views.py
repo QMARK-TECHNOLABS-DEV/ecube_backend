@@ -1,13 +1,15 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import class_updates_link
+from .models import class_updates_link, announcements
 from .serializers import class_updates_link_serializer, class_updates_link_get_serializer
 from register_student.models import Student
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 import datetime
 from django.utils import timezone
+from django.db.models import ExpressionWrapper, F, TimeField
+from django.db.models.functions import Cast
 class Class_Updates_Admin(APIView):
     def post(self, request):
         data=request.data
@@ -134,20 +136,88 @@ class Class_Update_Client_Side(APIView):
             class_name = class_name.upper()
             batch_year = batch_year.upper()
             division = division.upper()
-            
-            queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
-            
             date = datetime.date.today()
+            
+            queryset = class_updates_link.objects.filter(
+                class_name=class_name,
+                batch_year=batch_year,
+                division=division,
+                date=date
+            ).annotate(
+                class_time_as_time=ExpressionWrapper(
+                    Cast(F('class_time'), output_field=TimeField()),
+                    output_field=TimeField()
+                )
+            ).order_by('class_time_as_time')
+            
+            announcement = announcements.objects.filter(upload_date=str(date)).first()
+            
+            if announcement == None:
+                announcement = ""
+            else:
+                announcement = announcement.announcement
             
             print(date)
             if queryset == []:
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:                  
-                queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
-                   
                 serializer = class_updates_link_get_serializer(queryset, many=True)
+                
+                
             
             if serializer.data == []:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"date": "","class_links":[]},status=status.HTTP_204_NO_CONTENT)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data},status=status.HTTP_200_OK)
             else:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"date": date,"class_links":serializer.data}, status=status.HTTP_200_OK)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data}, status=status.HTTP_200_OK)
+            
+            
+class Announcements(APIView):
+    def post(self, request):
+        data=request.data
+        data['upload_date'] = data['upload_date'].upper()
+        
+        announcement_instance = announcements.objects.filter(upload_date=data['upload_date']).first()
+        
+        if announcement_instance != None:
+            announcement_instance.announcement = data['announcement']
+            announcement_instance.save()
+            
+            return Response({"message": "announcements updated succefully"},status=status.HTTP_200_OK)
+        else:
+        
+            announcements.objects.create(announcement=data['announcement'], upload_date=data['upload_date'])
+            
+            return Response({"message": "announcements added succefully"},status=status.HTTP_201_CREATED)
+    
+    def get(self, request):
+        announcement = announcements.objects.all()
+        
+        if announcement == None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"announcements": announcement}, status=status.HTTP_200_OK)
+        
+    def put(self, request):
+        data=request.data
+        data['upload_date'] = data['upload_date'].upper()
+        
+        announcement_instance = announcements.objects.filter(upload_date=data['upload_date']).first()
+        
+        if announcement_instance != None:
+            announcement_instance.announcement = data['announcement']
+            announcement_instance.save()
+            
+            return Response({"message": "announcements updated succefully"},status=status.HTTP_200_OK)
+        
+    def delete(self, request):
+        data=request.data
+        data['upload_date'] = data['upload_date'].upper()
+        
+        announcement_instance = announcements.objects.filter(upload_date=data['upload_date']).first()
+        
+        if announcement_instance != None:
+            announcement_instance.delete()
+            
+            return Response({"message": "announcements deleted succefully"},status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "announcements not found"},status=status.HTTP_400_BAD_REQUEST)
