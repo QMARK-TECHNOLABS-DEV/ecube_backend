@@ -9,4 +9,4 @@ class class_updates_link_serializer(ModelSerializer):
 class class_updates_link_get_serializer(ModelSerializer):
     class Meta:
         model = class_updates_link
-        fields = ('subject', 'link', 'topic','class_time', 'date')
+        fields = ('subject', 'link', 'topic','class_time')

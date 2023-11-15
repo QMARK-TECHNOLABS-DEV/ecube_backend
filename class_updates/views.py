@@ -6,7 +6,7 @@ from .serializers import class_updates_link_serializer, class_updates_link_get_s
 from register_student.models import Student
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
-from datetime import datetime, timedelta
+import datetime
 from django.utils import timezone
 class Class_Updates_Admin(APIView):
     def post(self, request):
@@ -136,7 +136,10 @@ class Class_Update_Client_Side(APIView):
             division = division.upper()
             
             queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
-       
+            
+            date = datetime.date.today()
+            
+            print(date)
             if queryset == []:
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:                  
@@ -145,6 +148,6 @@ class Class_Update_Client_Side(APIView):
                 serializer = class_updates_link_get_serializer(queryset, many=True)
             
             if serializer.data == []:
-                return Response(status=status.HTTP_204_NO_CONTENT)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"date": "","class_links":[]},status=status.HTTP_204_NO_CONTENT)
             else:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"class_links":serializer.data}, status=status.HTTP_200_OK)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"date": date,"class_links":serializer.data}, status=status.HTTP_200_OK)
