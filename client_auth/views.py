@@ -36,7 +36,7 @@ class SendOTP(APIView):
                 try:
                     otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
                     
-                    otp_instance = OTP.objects.filter(phone_number=phone_number)
+                    otp_instance = OTP.objects.filter(phone_number=phone_number).all()
                     
                     if otp_instance:
                         for otp in otp_instance:
@@ -66,7 +66,12 @@ class SendOTP(APIView):
             else:           
                 
                 otp = '123456'
-           
+                
+                otp_instance = OTP.objects.filter(phone_number=phone_number).all()
+                    
+                if otp_instance:
+                    for otps in otp_instance:
+                        otps.delete()
                 
                 print(otp)
                 OTP.objects.create(phone_number=phone_number, code=otp)

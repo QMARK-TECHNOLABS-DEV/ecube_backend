@@ -6,7 +6,8 @@ from .models import Student, create_tables, class_details
 from .serializers import ClassDetailsSerializer, StudentSerializer, ExamStudentDisplaySerializer, StudentDisplaySerializer
 import pandas as pd
 from django.db import connection, DatabaseError
-
+from client_auth.utils import TokenUtil
+from client_auth.models import Token
 class StudentMethods(APIView):
     def post(self, request):
         
@@ -208,7 +209,49 @@ class ClassMethods(APIView):
             except DatabaseError as e:
                 return Response({"message": f"Error deleting tables: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        
+class DeviceIdMethods(APIView):
+    def put(self, request):
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            _, token = authorization_header.split()
+
+            token_key = Token.objects.filter(access_token=token).first()
+
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            payload = TokenUtil.decode_token(token_key.access_token)
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = payload.get('id')
+
+            if not user_id:
+                return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Generate a new access token
+            
+            device_id = request.data['device_id']
+                
+            student_instance = Student.objects.filter(id=user_id).first()
+                
+            if student_instance:
+                student_instance.device_id = device_id
+                student_instance.save()
+                    
+                return Response({"message": "Device ID updated successfully"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "Student does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:  # Catch specific exceptions for debugging
+            return Response({"message": "Internal failure", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 class StudentBulkMethods(APIView):
     
     def post(self, request, format=None):

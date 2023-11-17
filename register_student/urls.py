@@ -14,5 +14,5 @@ urlpatterns = [
     path('update/class/details/', views.ClassMethods.as_view(), name='update-class-details'),
     path('get/class/details/', views.ClassMethods.as_view(), name='update-class-details'),
     path('delete/class/details/', views.ClassMethods.as_view(), name='update-class-details'),
-  
+    path('update/device/key/', views.DeviceIdMethods.as_view(), name='update-device-key'),
 ]

@@ -22,6 +22,7 @@ class Student(models.Model):
     class_group = models.ForeignKey(class_details, on_delete=models.CASCADE, null=True, blank=True)
     school_name = models.TextField()
     email_id = models.TextField(default='')
+    device_id = models.TextField(default='')
     logged_in = models.BooleanField(default=False)
 
 class ExamResults(models.Model):
