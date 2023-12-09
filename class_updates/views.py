@@ -10,6 +10,37 @@ import datetime
 from django.utils import timezone
 from django.db.models import ExpressionWrapper, F, TimeField
 from django.db.models.functions import Cast
+import requests
+import json
+
+def send_notification(registration_ids, message_title, message_desc, message_type):
+    fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
+    url = "https://fcm.googleapis.com/fcm/send"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": 'key=' + fcm_api
+    }
+
+    payload = {
+        "registration_ids": registration_ids,
+        "priority": "high",
+        "notification": {
+            "body": message_desc,
+            "title": message_title,
+        },
+        "data": {
+            "type": message_type,
+        }
+    }
+
+    result = requests.post(url, data=json.dumps(payload), headers=headers)
+    print(result.json())
+
+def send(registration,message_title, message_desc, message_type):
+    # registration = ['dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b']
+    result = send_notification(registration, message_title, message_desc, message_type)
+    print(result)
 class Class_Updates_Admin(APIView):
     def post(self, request):
         data=request.data
@@ -75,6 +106,8 @@ class Class_Updates_Admin(APIView):
             
             if serializer.is_valid():
                 serializer.save()
+                
+                
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 print(serializer.errors)
@@ -218,6 +251,6 @@ class Announcements(APIView):
         if announcement_instance != None:
             announcement_instance.delete()
             
-            return Response({"message": "announcements deleted succefully"},status=status.HTTP_200_OK)
+            return Response({"message": "announcements deleted successfully"},status=status.HTTP_200_OK)
         else:
             return Response({"message": "announcements not found"},status=status.HTTP_400_BAD_REQUEST)
