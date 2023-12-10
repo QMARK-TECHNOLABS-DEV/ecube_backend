@@ -1,8 +1,8 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import class_updates_link, announcements
-from .serializers import class_updates_link_serializer, class_updates_link_get_serializer
+from .models import class_updates_link, announcements, recordings
+from .serializers import class_updates_link_serializer, class_updates_link_get_serializer, announcement_serializer, recording_serializer
 from register_student.models import Student
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
@@ -196,8 +196,14 @@ class Class_Update_Client_Side(APIView):
             else:                  
                 serializer = class_updates_link_get_serializer(queryset, many=True)
                 
+            for i in range(len(serializer.data)):
+                recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division, subject=serializer.data[i]['subject'], date=date).first()
                 
-            
+                if recordings_instance == None:
+                    serializer.data[i]['recording_link'] = ""
+                else:
+                    serializer.data[i]['recording_link'] = recordings_instance.recording_link
+                    
             if serializer.data == []:
                 return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data},status=status.HTTP_200_OK)
             else:
@@ -225,10 +231,12 @@ class Announcements(APIView):
     def get(self, request):
         announcement = announcements.objects.all()
         
+        serializer = announcement_serializer(announcement, many=True)
+        
         if announcement == None:
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response({"announcements": announcement}, status=status.HTTP_200_OK)
+            return Response({"announcements": serializer.data}, status=status.HTTP_200_OK)
         
     def put(self, request):
         data=request.data
@@ -240,7 +248,7 @@ class Announcements(APIView):
             announcement_instance.announcement = data['announcement']
             announcement_instance.save()
             
-            return Response({"message": "announcements updated succefully"},status=status.HTTP_200_OK)
+            return Response({"message": "announcements updated successfully"},status=status.HTTP_200_OK)
         
     def delete(self, request):
         data=request.data
@@ -254,3 +262,107 @@ class Announcements(APIView):
             return Response({"message": "announcements deleted successfully"},status=status.HTTP_200_OK)
         else:
             return Response({"message": "announcements not found"},status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class RecordingsLink(APIView):
+    def post(self, request):
+        try:
+            data=request.data
+            data['class_name'] = data['class_name'].upper()
+            data['batch_year'] = data['batch_year'].upper()
+            data['division'] = data['division'].upper()
+            data['subject'] = data['subject'].upper()
+            data['date'] = data['date'].upper()
+            
+            recordings_instance = recordings.objects.filter(
+                class_name=data['class_name'],
+                batch_year=data['batch_year'],
+                division=data['division'],
+                subject=data['subject'],
+                date=data['date']
+            ).first()
+            
+            if recordings_instance:
+                recordings_instance.recording_link = data['recording_link']
+                recordings_instance.save()
+            else:
+                recordings.objects.create(
+                    class_name=data['class_name'],
+                    batch_year=data['batch_year'],
+                    division=data['division'],
+                    subject=data['subject'],
+                    date=data['date'],
+                    recording_link=data['recording_link']
+                )
+                
+            return Response({"message": "Recordings link added successfully"},status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print(e)
+            return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)
+        
+    
+    def get(self, request):
+        class_name = request.query_params.get('class_name')
+        batch_year = request.query_params.get('batch_year')
+        division = request.query_params.get('division')
+        
+        if class_name == None or batch_year == None or division == None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            class_name = class_name.upper()
+            batch_year = batch_year.upper()
+            division = division.upper()
+
+            
+            queryset = recordings.objects.filter(
+                class_name=class_name,
+                batch_year=batch_year,
+                division=division,
+            ).order_by('-upload_time')
+            
+            serializer = recording_serializer(queryset, many=True)
+            
+            if serializer.data == []:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({"recordings":serializer.data}, status=status.HTTP_200_OK)
+            
+    
+    def put(self, request):
+        data=request.data
+        data['class_name'] = data['class_name'].upper()
+        data['batch_year'] = data['batch_year'].upper()
+        data['division'] = data['division'].upper()
+        data['subject'] = data['subject'].upper()
+        data['date'] = data['date'].upper()
+        
+        recordings_instance = recordings.objects.filter(
+            class_name=data['class_name'],
+            batch_year=data['batch_year'],
+            division=data['division'],
+            subject=data['subject'],
+            date=data['date']
+        ).first()
+        
+        if recordings_instance:
+            recordings_instance.recording_link = data['recording_link']
+            recordings_instance.save()
+            
+            return Response({"message": "Recordings link updated successfully"},status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Recordings link not found"},status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self, request):
+        recordings_id = request.query_params.get('recordings_id')
+        
+        if recordings_id == None:
+            return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                queryset = recordings.objects.get(id=recordings_id)
+            except:
+                return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)
+            
+            queryset.delete()
+            return Response({"message": "Recordings link deleted successfully"},status=status.HTTP_200_OK)
