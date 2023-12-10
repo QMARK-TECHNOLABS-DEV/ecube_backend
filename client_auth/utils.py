@@ -11,9 +11,7 @@ class TokenUtil:
         # Check if tokens already exist for the user
         existing_tokens = Token.objects.filter(user=user).first()
         if existing_tokens:
-            existing_tokens.access_token = TokenUtil.generate_access_token(user)
-            existing_tokens.refresh_token = TokenUtil.generate_refresh_token(user)
-            return existing_tokens.access_token, existing_tokens.refresh_token
+            existing_tokens.delete()
 
         # Generate new tokens
         access_token = TokenUtil.generate_access_token(user)

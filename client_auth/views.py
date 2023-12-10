@@ -107,11 +107,8 @@ class VerifyOTP(APIView):
                     
                     otp.delete()  
 
-                    # Validate tokens
-                    if TokenUtil.validate_tokens(access_token, refresh_token):
-                        return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name}, status=status.HTTP_200_OK)
-                    else:
-                        return Response({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
+                    return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name}, status=status.HTTP_200_OK)
+
                     
                 else:
                     return Response({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
