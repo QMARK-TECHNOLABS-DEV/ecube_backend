@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import class_updates_link, announcements, recordings
-from .serializers import class_updates_link_serializer, class_updates_link_get_serializer, announcement_serializer, recording_serializer
+from .serializers import recordings_get_serializer,class_updates_link_serializer, class_updates_link_get_serializer, announcement_serializer, recording_serializer
 from register_student.models import Student
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
@@ -171,6 +171,8 @@ class Class_Update_Client_Side(APIView):
             division = division.upper()
             date = datetime.date.today()
             
+            print(date)
+            
             queryset = class_updates_link.objects.filter(
                 class_name=class_name,
                 batch_year=batch_year,
@@ -196,18 +198,16 @@ class Class_Update_Client_Side(APIView):
             else:                  
                 serializer = class_updates_link_get_serializer(queryset, many=True)
                 
-            for i in range(len(serializer.data)):
-                recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division, subject=serializer.data[i]['subject'], date=date).first()
-                
-                if recordings_instance == None:
-                    serializer.data[i]['recording_link'] = ""
-                else:
-                    serializer.data[i]['recording_link'] = recordings_instance.recording_link
+            recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division, date=date).order_by('-upload_time')
+            
+            recording_serializer = recordings_get_serializer(recordings_instance,many=True)
+            
+            
                     
             if serializer.data == []:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data},status=status.HTTP_200_OK)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data,"recorded_classes": recording_serializer.data},status=status.HTTP_200_OK)
             else:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data}, status=status.HTTP_200_OK)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data,"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
             
             
 class Announcements(APIView):

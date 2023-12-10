@@ -16,6 +16,10 @@ class announcement_serializer(ModelSerializer):
         model = announcements
         fields = ('id','announcement', 'upload_date', 'upload_time')
         
+class recordings_get_serializer(ModelSerializer):
+    class Meta:
+        model = recordings
+        fields = ('subject','recording_link')
         
 class recording_serializer(ModelSerializer):
     class Meta:
