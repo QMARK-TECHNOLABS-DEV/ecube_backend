@@ -12,6 +12,7 @@ from django.db.models import ExpressionWrapper, F, TimeField
 from django.db.models.functions import Cast
 import requests
 import json
+import pytz
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -170,6 +171,10 @@ class Class_Update_Client_Side(APIView):
             batch_year = batch_year.upper()
             division = division.upper()
             date = datetime.date.today()
+            
+            print(date)
+            
+            
             
             print(date)
             
