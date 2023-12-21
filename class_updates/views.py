@@ -239,7 +239,39 @@ class Class_Update_Client_Side(APIView):
 class GetRecordingDates(APIView):
     def get(self, request):
         try:
-            dates_instance = recordings.objects.values('date').distinct().order_by('-date')
+                    
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            _, token = authorization_header.split()
+
+            token_key = Token.objects.filter(access_token=token).first()
+
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            payload = TokenUtil.decode_token(token_key.access_token)
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = payload.get('id')
+
+            if not user_id:
+                return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Generate a new access token
+            user = Student.objects.get(id=user_id)
+            
+            batch_year = user.batch_year
+            class_name = user.class_name
+            division = user.division
+            
+            dates_instance = recordings.objects.filter(batch_year=batch_year,class_name=class_name,division=division).values('date').distinct().order_by('-date')
   
             unique_dates = [date['date'] for date in dates_instance]
 
