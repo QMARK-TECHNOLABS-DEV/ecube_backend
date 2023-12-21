@@ -24,5 +24,6 @@ class recordings(models.Model):
     date = models.CharField(max_length=10, default="", null=True, blank=True)
     upload_time = models.DateTimeField(auto_now_add=True)
     recording_link = models.TextField(null=True, blank=True)
+    video_id = models.CharField(max_length=100, null=True, blank=True)
     
 

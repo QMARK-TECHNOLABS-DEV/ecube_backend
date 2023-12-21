@@ -12,7 +12,7 @@ from django.db.models import ExpressionWrapper, F, TimeField
 from django.db.models.functions import Cast
 import requests
 import json
-import pytz
+
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -38,10 +38,11 @@ def send_notification(registration_ids, message_title, message_desc, message_typ
     result = requests.post(url, data=json.dumps(payload), headers=headers)
     print(result.json())
 
-def send(registration,message_title, message_desc, message_type):
+def send_notification_main(registration,message_title, message_desc, message_type):
     # registration = ['dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b']
     result = send_notification(registration, message_title, message_desc, message_type)
     print(result)
+    
 class Class_Updates_Admin(APIView):
     def post(self, request):
         data=request.data
@@ -56,6 +57,7 @@ class Class_Updates_Admin(APIView):
         serializer = class_updates_link_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             print(serializer.errors)
@@ -108,7 +110,27 @@ class Class_Updates_Admin(APIView):
             if serializer.is_valid():
                 serializer.save()
                 
+                students_instance = Student.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).values('device_id')
                 
+                if students_instance:
+                    device_ids = [student['device_id'] for student in students_instance]
+
+                    print(device_ids)
+                    
+                    if data['subject'] == 'PHYSICS':
+                        message_title = "Physics Class Update"
+                        subject_name = "Physics"
+                    elif data['subject'] == 'CHEMISTRY':
+                        message_title = "Chemistry Class Update"
+                        subject_name = "Chemistry"
+                    elif data['subject'] == 'MATHS':
+                        message_title = "Maths Class Update"
+                        subject_name = "Maths"
+                
+                    message_desc = "New live class link added for " + subject_name + " class"
+                    message_type = "liveclass"
+                    send_notification_main(device_ids,message_title, message_desc, message_type)
+                    
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 print(serializer.errors)
@@ -203,18 +225,88 @@ class Class_Update_Client_Side(APIView):
             else:                  
                 serializer = class_updates_link_get_serializer(queryset, many=True)
                 
-            recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division, date=date).order_by('-upload_time')
+            # recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division, date=date).order_by('-upload_time')
             
-            recording_serializer = recordings_get_serializer(recordings_instance,many=True)
+            # recording_serializer = recordings_get_serializer(recordings_instance,many=True)
             
             
                     
             if serializer.data == []:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data,"recorded_classes": recording_serializer.data},status=status.HTTP_200_OK)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data},status=status.HTTP_200_OK)
             else:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data,"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
+                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data}, status=status.HTTP_200_OK)
+
+class GetRecordingDates(APIView):
+    def get(self, request):
+        try:
+            dates_instance = recordings.objects.values('date').distinct().order_by('-date')
+  
+            unique_dates = [date['date'] for date in dates_instance]
+
+            return Response({"dates": unique_dates})
+        except Exception as e:
+            print(e)
+            return Response({"message": str(e)})  
+         
+class recording_client_side(APIView):
+    def get(self, request):
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            _, token = authorization_header.split()
+
+            token_key = Token.objects.filter(access_token=token).first()
+
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            payload = TokenUtil.decode_token(token_key.access_token)
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = payload.get('id')
+
+            if not user_id:
+                return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Generate a new access token
+            user = Student.objects.get(id=user_id)
             
+            batch_year = user.batch_year
+            class_name = user.class_name
+            division = user.division
+            date = request.data['date']
             
+            if class_name == None or batch_year == None or division == None:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            else:
+                class_name = class_name.upper()
+                batch_year = batch_year.upper()
+                division = division.upper()
+                
+                recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date).order_by('-upload_time')
+            
+                recording_serializer = recordings_get_serializer(recordings_instance,many=True)
+                
+                # recordings_instance_chem = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,subject='CHEMISTRY',date=date).order_by('-upload_time')
+            
+                # recording_serializer_chem = recordings_get_serializer(recordings_instance_chem,many=True)
+                
+                # recordings_instance_math = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,subject='MATHS',date=date).order_by('-upload_time')
+            
+                # recording_serializer_math = recordings_get_serializer(recordings_instance_math,many=True)
+                
+                return Response({"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(e)
+            return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)       
 class Announcements(APIView):
     def post(self, request):
         data=request.data
@@ -268,7 +360,24 @@ class Announcements(APIView):
         else:
             return Response({"message": "announcements not found"},status=status.HTTP_400_BAD_REQUEST)
         
+def get_yt_video_id(url):
+    from urllib.parse import urlparse, parse_qs
+
+    if url.startswith(('youtu', 'www')):
+        url = 'http://' + url
         
+    query = urlparse(url)
+
+    if 'youtube' in query.hostname:
+        if query.path == '/watch':
+            return parse_qs(query.query)['v'][0]
+        elif query.path.startswith(('/embed/', '/v/')):
+            return query.path.split('/')[2]
+    elif 'youtu.be' in query.hostname:
+        return query.path[1:]
+    else:
+        raise ValueError
+    
 class RecordingsLink(APIView):
     def post(self, request):
         try:
@@ -279,26 +388,38 @@ class RecordingsLink(APIView):
             data['subject'] = data['subject'].upper()
             data['date'] = data['date'].upper()
             
-            recordings_instance = recordings.objects.filter(
-                class_name=data['class_name'],
-                batch_year=data['batch_year'],
-                division=data['division'],
-                subject=data['subject'],
-                date=data['date']
-            ).first()
+            video_id = get_yt_video_id(data['recording_link'])
             
-            if recordings_instance:
-                recordings_instance.recording_link = data['recording_link']
-                recordings_instance.save()
-            else:
-                recordings.objects.create(
+            recordings.objects.create(
                     class_name=data['class_name'],
                     batch_year=data['batch_year'],
                     division=data['division'],
                     subject=data['subject'],
                     date=data['date'],
-                    recording_link=data['recording_link']
+                    recording_link=data['recording_link'],
+                    video_id=video_id
                 )
+            
+            students_instance = Student.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).values('device_id')
+                
+            if students_instance:
+                device_ids = [student['device_id'] for student in students_instance]
+
+                print(device_ids)
+                
+                if data['subject'] == 'PHYSICS':
+                    message_title = "Recorded Class Added"
+                    subject_name = "Physics"
+                elif data['subject'] == 'CHEMISTRY':
+                    message_title = "Recorded Class Added"
+                    subject_name = "Chemistry"
+                elif data['subject'] == 'MATHS':
+                    message_title = "Recorded Class Added"
+                    subject_name =  "Maths"
+            
+                message_desc = "Recorded class for "+ subject_name+ " for " + data['date'] +" have been added"
+                message_type = "liveclass"
+                send_notification_main(device_ids,message_title, message_desc, message_type)
                 
             return Response({"message": "Recordings link added successfully"},status=status.HTTP_201_CREATED)
             
@@ -329,7 +450,7 @@ class RecordingsLink(APIView):
             serializer = recording_serializer(queryset, many=True)
             
             if serializer.data == []:
-                return Response(status=status.HTTP_204_NO_CONTENT)
+                return Response({"recordings":serializer.data},status=status.HTTP_200_OK)
             else:
                 return Response({"recordings":serializer.data}, status=status.HTTP_200_OK)
             
@@ -352,6 +473,8 @@ class RecordingsLink(APIView):
         
         if recordings_instance:
             recordings_instance.recording_link = data['recording_link']
+            video_id = get_yt_video_id(data['recording_link'])
+            recordings_instance.video_id = video_id
             recordings_instance.save()
             
             return Response({"message": "Recordings link updated successfully"},status=status.HTTP_200_OK)

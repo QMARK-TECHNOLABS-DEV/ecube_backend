@@ -1,45 +1,20 @@
-# from pyfcm import FCMNotification
- 
-# push_service = FCMNotification(api_key="AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3")
+def get_yt_video_id(url):
+    from urllib.parse import urlparse, parse_qs
 
-# registration_ids = ["dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b"]
-# message_title = 'Hello alvin ikka' 
-# message_body = 'I love you so much'
-# result=push_service.notify_multiple_devices(registration_ids=registration_ids, message_title=message_title, message_body=message_body)
- 
-# print (result)
+    if url.startswith(('youtu', 'www')):
+        url = 'http://' + url
+        
+    query = urlparse(url)
 
-import requests
-import json
-
-def send_notification(registration_ids, message_title, message_desc, message_type):
-    fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
-    url = "https://fcm.googleapis.com/fcm/send"
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": 'key=' + fcm_api
-    }
-
-    payload = {
-        "registration_ids": registration_ids,
-        "priority": "high",
-        "notification": {
-            "body": message_desc,
-            "title": message_title,
-        },
-        "data": {
-            "type": message_type,
-        }
-    }
-
-    result = requests.post(url, data=json.dumps(payload), headers=headers)
-    print(result.json())
-
-def send():
-    registration = ['dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b']
-    result = send_notification(registration, 'nayeente mone', 'oooooooooooooooooooooooooooooooooooooooooooooooooooommmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'attendence')
-    print(result)
-
-if __name__ == "__main__":
-    send()
+    if 'youtube' in query.hostname:
+        if query.path == '/watch':
+            return parse_qs(query.query)['v'][0]
+        elif query.path.startswith(('/embed/', '/v/')):
+            return query.path.split('/')[2]
+    elif 'youtu.be' in query.hostname:
+        return query.path[1:]
+    else:
+        raise ValueError
+    
+video_id = get_yt_video_id('https://youtu.be/FCxF1RRl1Hc')
+print(video_id)

@@ -7,13 +7,48 @@ from client_auth.models import Token
 from django.http import JsonResponse
 from django.db import connection
 import pandas as pd
+import requests
+import json
 
+def send_notification(registration_ids, message_title, message_desc, message_type):
+    fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
+    url = "https://fcm.googleapis.com/fcm/send"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": 'key=' + fcm_api
+    }
+
+    payload = {
+        "registration_ids": registration_ids,
+        "priority": "high",
+        "notification": {
+            "body": message_desc,
+            "title": message_title,
+        },
+        "data": {
+            "type": message_type,
+        }
+    }
+
+    result = requests.post(url, data=json.dumps(payload), headers=headers)
+    print(result.json())
+
+def send_notification_main(registration,message_title, message_desc, message_type):
+    # registration = ['dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b']
+    result = send_notification(registration, message_title, message_desc, message_type)
+    print(result)
+    
 class ExamResult(APIView):
     def post(self,request):
         try:
             batch_year = request.query_params.get('batch_year')
             class_name = request.query_params.get('class_name')
             division = request.query_params.get('division')
+            
+            batch_year_notif = batch_year
+            class_name_notif = class_name
+            division_notif = division
             
             if batch_year is None or class_name is None or division is None:
                 return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -73,7 +108,26 @@ class ExamResult(APIView):
 
                     except Exception as e:
                         return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry, and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            student_list = Student.objects.filter(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif).values('device_id')
+            
+            if student_list:
+                device_ids = [student['device_id'] for student in student_list]
 
+                print(device_ids)
+                
+                message_title_exam = "Exam Results have been published"
+                message_desc_exam = "Check your exam results now for " + exam_name
+                message_type_exam = "performance"
+                
+                message_title_leaderboard = "Leaderboard has been updated"
+                message_desc_leaderboard = "Check the leaderboard now for current standings"
+                message_type_leaderboard = "leaderboard"
+                
+                send_notification_main(device_ids,message_title_exam, message_desc_exam, message_type_exam)
+                
+                send_notification_main(device_ids,message_title_leaderboard, message_desc_leaderboard, message_type_leaderboard)
+                
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
         except Exception as e:

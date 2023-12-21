@@ -6,7 +6,36 @@ from register_student.models import Student, class_details
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 import pandas as pd
+import requests, json
+def send_notification(registration_ids, message_title, message_desc, message_type):
+    fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
+    url = "https://fcm.googleapis.com/fcm/send"
 
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": 'key=' + fcm_api
+    }
+
+    payload = {
+        "registration_ids": registration_ids,
+        "priority": "high",
+        "notification": {
+            "body": message_desc,
+            "title": message_title,
+        },
+        "data": {
+            "type": message_type,
+        }
+    }
+
+    result = requests.post(url, data=json.dumps(payload), headers=headers)
+    print(result.json())
+
+def send_notification_main(registration,message_title, message_desc, message_type):
+    # registration = ['dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b']
+    result = send_notification(registration, message_title, message_desc, message_type)
+    print(result)
+    
 def split_date(date_str):
     # Split the date string into parts
     parts = date_str.split(":")[1].split("/")
@@ -31,6 +60,10 @@ class AddDailyUpdatesBulk(APIView):
         batch_year = request.GET.get('batch_year')
         class_name = request.GET.get('class_name')
         division = request.GET.get('division')
+        
+        batch_year_notif = batch_year
+        class_name_notif = class_name
+        division_notif = division
 
         if batch_year is None or class_name is None or division is None:
             return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -111,6 +144,21 @@ class AddDailyUpdatesBulk(APIView):
                 print("Before insert")
                 cursor.execute(f"INSERT INTO public.{table_name} (admission_no, date, on_time, voice, nb_sub, mob_net, camera, full_class, activities, engagement, overall_performance_percentage, overall_performance, remarks) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [str(student['admission_no']), student['date'], student['on_time'], student['voice'], student['nb_sub'], student['mob_net'], student['camera'], student['full_class'], student['activities'], student['engagement'], student['overall_performance_percentage'], student['overall_performance'], student['remarks']])
                 print("After insert")
+                
+            cursor.close()
+            student_list = Student.objects.filter(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif).values('device_id')
+            
+            if student_list:
+                device_ids = [student['device_id'] for student in student_list]
+
+                print(device_ids)
+                
+                message_title = "Daily Class Updates have been published"
+                message_desc = "Check your daily class updates for your performance score"
+                message_type = "dailyClass"
+                
+                send_notification_main(device_ids,message_title, message_desc, message_type)
+                
             return Response({'message': 'Data saved successfully'}, status=status.HTTP_200_OK)
         except Exception as e:
             # Handle exceptions here

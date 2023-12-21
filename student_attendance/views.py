@@ -7,7 +7,37 @@ from client_auth.utils import TokenUtil
 from client_auth.models import Token
 from django.http import JsonResponse
 import pandas as pd
+import requests
+import json
 
+def send_notification(registration_ids, message_title, message_desc, message_type):
+    fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
+    url = "https://fcm.googleapis.com/fcm/send"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": 'key=' + fcm_api
+    }
+
+    payload = {
+        "registration_ids": registration_ids,
+        "priority": "high",
+        "notification": {
+            "body": message_desc,
+            "title": message_title,
+        },
+        "data": {
+            "type": message_type,
+        }
+    }
+
+    result = requests.post(url, data=json.dumps(payload), headers=headers)
+    print(result.json())
+
+def send_notification_main(registration,message_title, message_desc, message_type):
+    # registration = ['dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b']
+    result = send_notification(registration, message_title, message_desc, message_type)
+    print(result)
 class AddAttendance(APIView):
     def post(self, request):
         
@@ -47,6 +77,10 @@ class AddAttendanceBulk(APIView):
         class_name = request.GET.get('class_name')
         division = request.GET.get('division')
         date_attendance = request.GET.get('date')
+        
+        class_name_notif = class_name
+        batch_year_notif = batch_year
+        division_notif = division
 
         if batch_year is None or class_name is None or division is None or date_attendance is None:
             return Response({'status': 'failure', 'message': 'batch_year, class_name, date and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -64,7 +98,8 @@ class AddAttendanceBulk(APIView):
 
         # Process uploaded CSV or XLSX file
         try:
-            file = request.FILES['attendance_file']
+            file  = request.data.get('attendance_file')
+
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file)
             elif file.name.endswith('.xlsx'):
@@ -74,6 +109,9 @@ class AddAttendanceBulk(APIView):
         except Exception as e:
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        print(request.content_type)
+        print(request.data)
+
         # Insert attendance data into the database
         date_attendance = str(date_attendance)
 
@@ -81,12 +119,15 @@ class AddAttendanceBulk(APIView):
         app_name = 'register_student'
         table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
         
-        student_list = Student.objects.all().values('name','id')
+        student_list = Student.objects.filter(class_name=class_name_notif, batch_year=batch_year_notif, division=division_notif).values('id', 'name', 'device_id')
         
         try:
             for index, row in df.iterrows():
                 first_name = row.get('First name', None)
                 last_name = row.get('Last name', None)
+                
+                if str(last_name) == "nan":
+                    last_name = ""
                 full_name = str(first_name) + str(last_name)
 
                 full_name = full_name.replace(" ", "").lower()
@@ -97,20 +138,17 @@ class AddAttendanceBulk(APIView):
                     
                     name_db = student['name'].replace(" ", "").lower()
                     
-                    print(name_db)
                     
                     if full_name == name_db:
                         student_instance = Student.objects.get(id=student['id'])
                     else:
                         student_instance = None
                 
-                
-                
-
 
                     if student_instance is not None:
                         admission_no = student_instance.admission_no
                         
+                        print(admission_no)
                         cursor = connection.cursor()
                         
                         print("Found student")
@@ -126,10 +164,21 @@ class AddAttendanceBulk(APIView):
                             
                             print("Inserted")
                             cursor.close()
+                            
+            if student_list:
+                device_ids = [student['device_id'] for student in student_list]
 
-            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+                print(device_ids)
+                
+                message_title = "Attendance Added"
+                message_desc = "Attendance has been added for " + date_attendance
+                message_type = "attendence"
+                send_notification_main(device_ids,message_title, message_desc, message_type)
+                    
+            return Response({'status': 'success',"message": "Attendance added and notification send"}, status=status.HTTP_200_OK)
         except Exception as e:
             cursor.close()
+            print(e)
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         
