@@ -313,7 +313,7 @@ class recording_client_side(APIView):
             batch_year = user.batch_year
             class_name = user.class_name
             division = user.division
-            date = request.data['date']
+            date = request.data.get('date')
             
             if class_name == None or batch_year == None or division == None:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
