@@ -10,5 +10,6 @@ urlpatterns = [
     path('announcement/operation/', views.Announcements.as_view(), name='announcement_operation'),
     path('recordings/operation/', views.RecordingsLink.as_view(), name='recordings_operation'),
     path('recordings/client/get/', views.recording_client_side.as_view(), name='recordings_client_get'),
+    path('recordings/client/web/get/', views.recording_client_side_web.as_view(), name='recordings_client_get_web'),    
     path('recordings/dates/client/', views.GetRecordingDates.as_view(), name='recordings_dates_client_get'),
 ]

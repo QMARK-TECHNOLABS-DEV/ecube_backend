@@ -314,7 +314,7 @@ class recording_client_side(APIView):
             class_name = user.class_name
             division = user.division
             
-            date = request.data.get('date')
+            date = request.data['date']
             
             if not date:
                 return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)
@@ -335,7 +335,65 @@ class recording_client_side(APIView):
 
         except Exception as e:
             print(e)
-            return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)       
+            return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST) 
+        
+class recording_client_side_web(APIView):
+    def get(self, request):
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            _, token = authorization_header.split()
+
+            token_key = Token.objects.filter(access_token=token).first()
+
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            payload = TokenUtil.decode_token(token_key.access_token)
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = payload.get('id')
+
+            if not user_id:
+                return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Generate a new access token
+            user = Student.objects.get(id=user_id)
+            
+            batch_year = user.batch_year
+            class_name = user.class_name
+            division = user.division
+            
+            date = request.query_params.get('date')
+            
+            if not date:
+                return Response({"message": "Date not found"},status=status.HTTP_400_BAD_REQUEST)
+            
+            if class_name == None or batch_year == None or division == None:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            else:
+                class_name = class_name.upper()
+                batch_year = batch_year.upper()
+                division = division.upper()
+                
+                print(date, class_name, batch_year, division)
+                recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date).order_by('-upload_time')
+            
+                recording_serializer = recordings_get_serializer(recordings_instance,many=True)
+
+                return Response({"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(e)
+            return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST) 
+              
 class Announcements(APIView):
     def post(self, request):
         data=request.data
