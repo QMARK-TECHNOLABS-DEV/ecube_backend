@@ -62,6 +62,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://sapadminportal.online.s3-website-us-east-1.amazonaws.com",
     "https://localhost:3000",
+    "https://f5fe-103-161-144-200.ngrok-free.app",
     "https://localhost:4200",
     "https://ecube-test-67149.web.app",
     "https://ecube-test-67149.firebaseapp.com",

@@ -313,7 +313,11 @@ class recording_client_side(APIView):
             batch_year = user.batch_year
             class_name = user.class_name
             division = user.division
+            
             date = request.data.get('date')
+            
+            if not date:
+                return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)
             
             if class_name == None or batch_year == None or division == None:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -322,18 +326,11 @@ class recording_client_side(APIView):
                 batch_year = batch_year.upper()
                 division = division.upper()
                 
+                print(date, class_name, batch_year, division)
                 recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date).order_by('-upload_time')
             
                 recording_serializer = recordings_get_serializer(recordings_instance,many=True)
-                
-                # recordings_instance_chem = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,subject='CHEMISTRY',date=date).order_by('-upload_time')
-            
-                # recording_serializer_chem = recordings_get_serializer(recordings_instance_chem,many=True)
-                
-                # recordings_instance_math = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,subject='MATHS',date=date).order_by('-upload_time')
-            
-                # recording_serializer_math = recordings_get_serializer(recordings_instance_math,many=True)
-                
+
                 return Response({"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
 
         except Exception as e:
