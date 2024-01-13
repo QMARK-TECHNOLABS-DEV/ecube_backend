@@ -10,7 +10,7 @@ class TokenUtil:
         # Check if tokens already exist for the user
         existing_tokens = Token.objects.filter(user=user).first()
         if existing_tokens:
-            return existing_tokens.access_token, existing_tokens.refresh_token
+            existing_tokens.delete()
 
         # Generate new tokens
         access_token = TokenUtil.generate_access_token(user)
@@ -20,6 +20,7 @@ class TokenUtil:
         Token.objects.create(user=user, access_token=access_token, refresh_token=refresh_token)
         
         return access_token, refresh_token
+
     
     @staticmethod
     def validate_access_token(access_token):

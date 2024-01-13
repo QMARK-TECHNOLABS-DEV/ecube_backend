@@ -45,7 +45,7 @@ class SendOTP(APIView):
                     OTP.objects.create(phone_number=phone_number, code=otp)
                     
                     response = sendSMS(otp, phone_number)
-                    
+                    print("sended")
                     response_data = json.loads(response)
                     
                     

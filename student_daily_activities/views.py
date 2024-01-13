@@ -109,14 +109,14 @@ class AddDailyUpdatesBulk(APIView):
                     "admission_no": adm_no,
                     "date": date_variable,
                     "on_time": True,
-                    "voice": False if row[2] == "M" else True,
-                    "nb_sub": False if row[2] == "B" else True,
-                    "mob_net": False if row[2] == "R" else True,
-                    "camera": False if row[2] == "V" else True,
+                    "voice": False if str(row[2]).upper().strip() == "M" else True,
+                    "nb_sub": False if str(row[2]).upper().strip() == "B" else True,
+                    "mob_net": False if str(row[2]).upper().strip() == "R" else True,
+                    "camera": False if str(row[2]).upper().strip() == "V" else True,
                     "full_class": True,
                     "activities": sum(1 for val in row[3:] if val == "Y"),
-                    "engagement": False if row[2] == "L" else True,
-                    "remarks": activity_code[row[2]] if row[2] == "O" or row[2] == "N" else ""     
+                    "engagement": False if str(row[2]).upper().strip() == "L" else True,
+                    "remarks": activity_code[str(row[2]).upper().strip()] if str(row[2]).upper().strip() == "O" or str(row[2]).upper().strip() == "N" else ""     
                 }
                 
                 
@@ -277,8 +277,7 @@ class GetDailyUpdate(APIView):
         
         cursor = connection.cursor()
         
-        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND admission_no = %s", [date, user.admission_no])
-        
+        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND admission_no = %s ORDER BY id", [date, user.admission_no]) 
         
         query_result = cursor.fetchall()
         

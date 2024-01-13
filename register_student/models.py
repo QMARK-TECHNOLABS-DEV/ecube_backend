@@ -13,8 +13,8 @@ class class_details(models.Model):
 class Student(models.Model):
 
     name = models.TextField()
-    admission_no = models.CharField(max_length=20)
-    phone_no = models.CharField(max_length=10,primary_key=False)
+    admission_no = models.CharField(max_length=20,unique=True)
+    phone_no = models.CharField(max_length=10,primary_key=False,unique=True)
     batch_year = models.TextField(null=False, blank=False,default=0)
     class_name = models.CharField(max_length=10)
     division = models.CharField(max_length=1)
