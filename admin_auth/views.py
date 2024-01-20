@@ -153,13 +153,21 @@ class LoginUser(APIView):
         try:
             user = Admin.objects.get(email=request.data['email'], login_type='email')
             
+            print(user.id)
             if user is not None:
                 
+                print(user.logged_in)
                 if user.logged_in:
-                    user_token = Token.objects.get(user_id=user.id)
+                    try:
+                        user_token = Token.objects.get(user_id=user.id)
+                        
+                        if user_token:
+                            user_token.delete()
+                    except Exception as e:
+                        print(e)   
                     
-                    user_token.delete()
-                    
+                
+                print("User exists")
                 if check_password(request.data['password'], user.password):
                     print("Password is correct")
                     # Generate refresh and access tokens
