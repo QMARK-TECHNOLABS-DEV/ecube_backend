@@ -3,7 +3,6 @@ from django.utils import timezone
 class Admin(models.Model):
     email = models.TextField(max_length=100, unique=True)
     password = models.TextField(max_length=100)
-    logged_in = models.BooleanField(default=False)
     login_type = models.CharField(max_length=20, default='email')
     
     def __str__(self):

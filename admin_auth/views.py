@@ -154,19 +154,8 @@ class LoginUser(APIView):
             user = Admin.objects.get(email=request.data['email'], login_type='email')
             
             print(user.id)
-            if user is not None:
-                
-                print(user.logged_in)
-                if user.logged_in:
-                    try:
-                        user_token = Token.objects.get(user_id=user.id)
-                        
-                        if user_token:
-                            user_token.delete()
-                    except Exception as e:
-                        print(e)   
-                    
-                
+            if user is not None:  
+      
                 print("User exists")
                 if check_password(request.data['password'], user.password):
                     print("Password is correct")
@@ -175,7 +164,6 @@ class LoginUser(APIView):
                     
                     # Validate tokens
                     if TokenUtil.validate_tokens(access_token, refresh_token):
-                        user.logged_in = True
                         user.save()
 
                         return Response({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
@@ -287,23 +275,15 @@ class LogoutUser(APIView):
             if not user_id:
                 return Response({'error': 'The access token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
             
-            user = Admin.objects.get(id=user_id) 
+
+            print("User logged out and starting to blacklist token")
+            if TokenUtil.is_token_valid(token):
+                TokenUtil.blacklist_token(token)
                 
-            if user.logged_in:
-                # Blacklist the user's refresh token to invalidate it
-                        
-                user.logged_in = False
-                user.save()
-                
-                print("User logged out and starting to blacklist token")
-                if TokenUtil.is_token_valid(token):
-                    TokenUtil.blacklist_token(token)
-                    
-                    return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
             else:
-                return Response("User is not logged in!", status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
+
         
         except ObjectDoesNotExist:
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)

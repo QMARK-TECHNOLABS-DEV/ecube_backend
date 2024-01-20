@@ -9,8 +9,7 @@ class TokenUtil:
     def generate_tokens(user):
         # Check if tokens already exist for the user
         existing_tokens = Token.objects.filter(user=user).first()
-        if existing_tokens:
-            existing_tokens.delete()
+
 
         # Generate new tokens
         access_token = TokenUtil.generate_access_token(user)
