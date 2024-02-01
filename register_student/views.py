@@ -41,7 +41,7 @@ class StudentMethods(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
     def get(self, request):
-        students = Student.objects.filter(id=request.data['id'])
+        students = Student.objects.filter(id=request.query_params.get('id'))
         serializer = StudentSerializer(students, many=True)
         
         if serializer.data == []:
