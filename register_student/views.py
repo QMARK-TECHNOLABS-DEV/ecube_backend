@@ -49,7 +49,7 @@ class StudentMethods(APIView):
         return Response(serializer.data[0], status=status.HTTP_200_OK)
     
     def delete(self, request):
-        student = Student.objects.filter(id=request.data['id'])
+        student = Student.objects.filter(id=request.query_params.get('id'))
         
         if student.exists():
             student.delete()
@@ -166,7 +166,7 @@ class ClassMethods(APIView):
     def get(self, request):
         
         try: 
-            class_id = request.data.get('id')
+            class_id = request.query_params.get('id')
             
             if class_id:
                 class_instance = class_details.objects.filter(id=class_id).first()
