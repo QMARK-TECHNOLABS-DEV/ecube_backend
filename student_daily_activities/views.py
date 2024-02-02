@@ -381,8 +381,8 @@ class AdminGetDates(APIView):
 
 class AdminGetDailyUpdate(APIView):
     def get(self,request):
-        user_id = request.GET.get('user_id')
-        date = request.GET.get('date')
+        user_id = request.query_params.get('user_id')
+        date = request.query_params.get('date')
         
         if not user_id:
             return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -410,14 +410,22 @@ class AdminGetDailyUpdate(APIView):
         
         table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_dailyupdates"
         
+        print(table_name)
         cursor = connection.cursor()
         
-        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND admission_no = %s", [date, user.admission_no])
+        if date:
+            cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND admission_no = %s", [date, user.admission_no])
+            
+            query_result = cursor.fetchall()
+        else:
+            cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s", [user.admission_no])
+
+            print("query result obtained")
+            
+            query_result = cursor.fetchall()
         
         
-        query_result = cursor.fetchall()
-        
-        
+            print(query_result)
         cursor.close()
         
         daily_updates = []

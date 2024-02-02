@@ -23,7 +23,7 @@ class Student(models.Model):
     school_name = models.TextField()
     email_id = models.TextField(default='')
     device_id = models.TextField(default='')
-    logged_in = models.BooleanField(default=False)
+    restricted = models.BooleanField(default=False)
 
 class ExamResults(models.Model):
     admission_no = models.CharField(max_length=20)  # Specify the max_length

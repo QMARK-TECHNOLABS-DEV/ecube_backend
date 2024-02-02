@@ -9,6 +9,44 @@ from django.db import connection, DatabaseError
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 from class_updates.models import class_updates_link
+
+class StudentSoftDelete(APIView):
+    def post(self, request):
+        try:
+            student_id = request.data.get('user_id')
+            restricted_status = request.data.get('restricted_status')
+            
+            student_instance = Student.objects.filter(id=student_id).first()
+            if student_instance:
+                student_instance.restricted = restricted_status
+                student_instance.save()
+                
+                if restricted_status:
+                    user_token = Token.objects.filter(user_id=student_id)
+                    
+                    for token in user_token:
+                        token.delete()
+                        
+                return Response({'message': 'Student record restricted successfully'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'message': 'Student record does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'message': 'Internal failure', 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class NextAdmNumber(APIView):
+    def get(self, request):
+        try:
+            highest_adm_no = Student.objects.all().order_by('-admission_no').first()
+            
+            if highest_adm_no:
+                return Response({'next_adm_no': int(highest_adm_no.admission_no) + 1}, status=status.HTTP_200_OK)
+            
+            return Response({'next_adm_no': 1}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'message': 'Internal failure', 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
 class StudentMethods(APIView):
     def post(self, request):
         
