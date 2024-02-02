@@ -435,10 +435,10 @@ class Announcements(APIView):
             return Response({"message": "announcements updated successfully"},status=status.HTTP_200_OK)
         
     def delete(self, request):
-        data=request.data
-        data['upload_date'] = data['upload_date'].upper()
+        upload_date=request.query_params.get('upload_date')
+        upload_date = upload_date.upper()
         
-        announcement_instance = announcements.objects.filter(upload_date=data['upload_date']).first()
+        announcement_instance = announcements.objects.filter(upload_date=upload_date).first()
         
         if announcement_instance != None:
             announcement_instance.delete()
