@@ -131,10 +131,6 @@ class ClassMethods(APIView):
                         
                         serializer.save()
                         
-                        for subject in ['PHYSICS', 'CHEMISTRY', 'MATHS']:
-                            class_updates_link.objects.create(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division'], subject=subject)
-                            
-        
                         return Response({"message": "Successfully created class group and associated feature group"}, status=status.HTTP_201_CREATED)
             
                  
