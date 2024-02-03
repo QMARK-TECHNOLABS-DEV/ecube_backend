@@ -113,7 +113,7 @@ class VerifyOTP(APIView):
                     
                     otp.delete()  
 
-                    return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name}, status=status.HTTP_200_OK)
+                    return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name, 'class_name': user.class_name, 'batch_year': user.batch_year, 'division': user.division}, status=status.HTTP_200_OK)
 
                     
                 else:

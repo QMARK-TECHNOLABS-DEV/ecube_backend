@@ -449,7 +449,7 @@ def get_yt_video_id(url):
     elif 'youtu.be' in query.hostname:
         return query.path[1:]
     else:
-        raise ValueError
+        return ""
     
 class RecordingsLink(APIView):
     def post(self, request):
