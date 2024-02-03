@@ -203,15 +203,25 @@ class LogoutView(APIView):
 
     def post(self, request):
        
-        access_token = request.data.get('access_token')
+        authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
-        if not access_token:
-            return Response({'error': 'Access token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not authorization_header:
+            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if TokenUtil.is_token_valid(access_token):
-            TokenUtil.blacklist_token(access_token)
+        try:
+            _, access_token = authorization_header.split()
+
+            token_key = Token.objects.filter(access_token=access_token).first()
+            if not access_token:
+                return Response({'error': 'Access token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if TokenUtil.is_token_valid(access_token):
+                TokenUtil.blacklist_token(access_token)
+                
+                return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
             
-            return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
-        else:
-            return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
+        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
+            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
 

@@ -157,7 +157,11 @@ class ClassMethods(APIView):
                 
                 data = request.data
                 
-                new_table_name = f"{app_name}{app_name}{data['batch_year']}_{data['class_name']}_{data['division']}".replace(" ","").lower()
+                new_batch_year = data['batch_year'].replace(" ","").lower()
+                new_class_name = data['class_name'].replace(" ","").lower()
+                new_division = data['division'].replace(" ","").lower()
+                
+                new_table_name = f"{app_name}{app_name}{new_batch_year}_{new_class_name}_{new_division}".replace(" ","").lower()
             # Convert data values to uppercase
                 for key in data:
                     if isinstance(data[key], str):
@@ -182,10 +186,7 @@ class ClassMethods(APIView):
                             print(f'Table {table_name+row} deleted')
                             
                         except DatabaseError as e:
-                            print(f'Error deleting table {table_name+row}: {str(e)}')  
-                    
-                
-                                 
+                            print(f'Error deleting table {table_name+row}: {str(e)}')        
                     
                     return Response({"message": "Class updated successfully"}, status=status.HTTP_200_OK)
                 else:
