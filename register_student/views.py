@@ -185,6 +185,14 @@ class ClassMethods(APIView):
                             cursor.execute(f"ALTER TABLE {table_name+row} RENAME TO {new_table_name+row}")
                             print(f'Table {table_name+row} deleted')
                             
+                            students_instance = Student.objects.filter(class_group=class_instance.id)
+                            
+                            for student in students_instance:
+                                student.class_name = data['class_name']
+                                student.division = data['division']
+                                student.batch_year = data['batch_year']
+                                student.save()
+                                
                         except DatabaseError as e:
                             print(f'Error deleting table {table_name+row}: {str(e)}')        
                     
