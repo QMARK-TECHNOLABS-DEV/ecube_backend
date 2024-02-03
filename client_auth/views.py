@@ -26,66 +26,67 @@ class SendOTP(APIView):
         print(phone_number, type(phone_number))
         db_phone_number = Student.objects.filter(phone_no=phone_number).first()
         
-
-        if db_phone_number.restricted == False:
-            
-            no_of_users_signed_in = Token.objects.filter(user_id=db_phone_number.id).count()
-            
-            print(no_of_users_signed_in)
-            
-            if no_of_users_signed_in < 2:
-            
-                if str(db_phone_number.phone_no) != '1234567890':
-                    # Generate a random OTP (6 digits)
-                    try:
-                        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        if db_phone_number is not None:
+            if db_phone_number.restricted == False:
+                
+                no_of_users_signed_in = Token.objects.filter(user_id=db_phone_number.id).count()
+                
+                print(no_of_users_signed_in)
+                
+                if no_of_users_signed_in < 2:
+                
+                    if str(db_phone_number.phone_no) != '1234567890':
+                        # Generate a random OTP (6 digits)
+                        try:
+                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                            
+                            otp_instance = OTP.objects.filter(phone_number=phone_number).all()
+                            
+                            if otp_instance:
+                                for otp in otp_instance:
+                                    otp.delete()
+                                
+                            OTP.objects.create(phone_number=phone_number, code=otp)
+                            
+                            response = sendSMS(otp, phone_number)
+                            print("sended")
+                            response_data = json.loads(response)
+                            
+                            
+                            # Access the 'return' key
+                            return_value = response_data.get('return')
+                            # Check the response
+                            #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                            if return_value == True:
+                                print(f'OTP sent successfully to {phone_number}')
+                                return Response({'message': 'OTP sent successfully'})
+                            else:
+                                print('Failed to send OTP')
+                                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                            
+                        except Exception as e:
+                            print(e)
+                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    else:           
+                        
+                        otp = '123456'
                         
                         otp_instance = OTP.objects.filter(phone_number=phone_number).all()
-                        
-                        if otp_instance:
-                            for otp in otp_instance:
-                                otp.delete()
                             
+                        if otp_instance:
+                            for otps in otp_instance:
+                                otps.delete()
+                        
+                        print(otp)
                         OTP.objects.create(phone_number=phone_number, code=otp)
                         
-                        response = sendSMS(otp, phone_number)
-                        print("sended")
-                        response_data = json.loads(response)
-                        
-                        
-                        # Access the 'return' key
-                        return_value = response_data.get('return')
-                        # Check the response
-                        #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                        if return_value == True:
-                            print(f'OTP sent successfully to {phone_number}')
-                            return Response({'message': 'OTP sent successfully'})
-                        else:
-                            print('Failed to send OTP')
-                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                        
-                    except Exception as e:
-                        print(e)
-                        return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                else:           
-                    
-                    otp = '123456'
-                    
-                    otp_instance = OTP.objects.filter(phone_number=phone_number).all()
-                        
-                    if otp_instance:
-                        for otps in otp_instance:
-                            otps.delete()
-                    
-                    print(otp)
-                    OTP.objects.create(phone_number=phone_number, code=otp)
-                    
-                    return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+                        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'message': 'Maximum number of users signed in'}, status=status.HTTP_400_BAD_REQUEST)       
             else:
-                return Response({'message': 'Maximum number of users signed in'}, status=status.HTTP_400_BAD_REQUEST)       
+                return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response({'message': 'User not found or is restricted'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         
 class VerifyOTP(APIView):
     def post(self, request):

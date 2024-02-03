@@ -12,7 +12,7 @@ from django.db.models import ExpressionWrapper, F, TimeField
 from django.db.models.functions import Cast
 import requests
 import json
-
+from register_student.models import class_details
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -49,11 +49,14 @@ class Class_Updates_Admin(APIView):
         data['class_name'] = data['class_name'].upper()
         data['batch_year'] = data['batch_year'].upper()
         data['division'] = data['division'].upper()
-        data['subject'] = data['subject'].upper()
         data['topic'] = data['topic'].upper()
-        data['date'] = data['date'].upper()
-        data['class_time'] = data['class_time'].upper()
         
+        class_group = class_details.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).first()
+        
+        if class_group == None:
+            return Response({"message": "Class not found"},status=status.HTTP_400_BAD_REQUEST)
+        
+
         serializer = class_updates_link_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -99,7 +102,6 @@ class Class_Updates_Admin(APIView):
             data['class_name'] = data['class_name'].upper()
             data['batch_year'] = data['batch_year'].upper()
             data['division'] = data['division'].upper()
-            data['subject'] = data['subject'].upper()
             data['topic'] = data['topic'].upper()
             
             # Update upload_time
@@ -112,24 +114,24 @@ class Class_Updates_Admin(APIView):
                 
                 students_instance = Student.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).values('device_id')
                 
-                if students_instance:
-                    device_ids = [student['device_id'] for student in students_instance]
+                # if students_instance:
+                #     device_ids = [student['device_id'] for student in students_instance]
 
-                    print(device_ids)
+                #     print(device_ids)
                     
-                    if data['subject'] == 'PHYSICS':
-                        message_title = "Physics Class Update"
-                        subject_name = "Physics"
-                    elif data['subject'] == 'CHEMISTRY':
-                        message_title = "Chemistry Class Update"
-                        subject_name = "Chemistry"
-                    elif data['subject'] == 'MATHS':
-                        message_title = "Maths Class Update"
-                        subject_name = "Maths"
+                #     if data['subject'] == 'PHYSICS':
+                #         message_title = "Physics Class Update"
+                #         subject_name = "Physics"
+                #     elif data['subject'] == 'CHEMISTRY':
+                #         message_title = "Chemistry Class Update"
+                #         subject_name = "Chemistry"
+                #     elif data['subject'] == 'MATHS':
+                #         message_title = "Maths Class Update"
+                #         subject_name = "Maths"
                 
-                    message_desc = "New live class link added for " + subject_name + " class"
-                    message_type = "liveclass"
-                    send_notification_main(device_ids,message_title, message_desc, message_type)
+                #     message_desc = "New live class link added for " + subject_name + " class"
+                #     message_type = "liveclass"
+                #     send_notification_main(device_ids,message_title, message_desc, message_type)
                     
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
@@ -192,25 +194,14 @@ class Class_Update_Client_Side(APIView):
             class_name = class_name.upper()
             batch_year = batch_year.upper()
             division = division.upper()
+
             date = datetime.date.today()
-            
-            print(date)
-            
-            
-            
-            print(date)
             
             queryset = class_updates_link.objects.filter(
                 class_name=class_name,
                 batch_year=batch_year,
                 division=division,
-                date=date
-            ).annotate(
-                class_time_as_time=ExpressionWrapper(
-                    Cast(F('class_time'), output_field=TimeField()),
-                    output_field=TimeField()
-                )
-            ).order_by('class_time_as_time')
+            ).order_by('-upload_time')
             
             announcement = announcements.objects.filter(upload_date=str(date)).first()
             
@@ -225,16 +216,11 @@ class Class_Update_Client_Side(APIView):
             else:                  
                 serializer = class_updates_link_get_serializer(queryset, many=True)
                 
-            # recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division, date=date).order_by('-upload_time')
-            
-            # recording_serializer = recordings_get_serializer(recordings_instance,many=True)
-            
-            
                     
             if serializer.data == []:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data},status=status.HTTP_200_OK)
+                return Response({"announcement": announcement,"class_links":serializer.data},status=status.HTTP_200_OK)
             else:
-                return Response({"class_name": class_name,"batch_year":batch_year,"division":division,"announcement": announcement,"date": date,"class_links":serializer.data}, status=status.HTTP_200_OK)
+                return Response({"announcement": announcement,"class_links":serializer.data}, status=status.HTTP_200_OK)
 
 class GetRecordingDates(APIView):
     def get(self, request):

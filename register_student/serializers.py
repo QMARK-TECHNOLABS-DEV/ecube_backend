@@ -12,7 +12,7 @@ class StudentDisplaySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Student
-        fields = ['id', 'name', 'admission_no','phone_no', 'school_name', 'subjects', 'email_id'] 
+        fields = ['id', 'name', 'admission_no','phone_no', 'school_name', 'subjects', 'email_id','restricted'] 
         
 class ExamStudentDisplaySerializer(serializers.ModelSerializer):
         class Meta:
