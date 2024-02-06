@@ -383,8 +383,7 @@ class recording_client_side_web(APIView):
 class Announcements(APIView):
     def post(self, request):
         data=request.data
-        data['upload_date'] = data['upload_date'].upper()
-        
+
         announcement_instance = announcements.objects.filter(upload_date=data['upload_date']).first()
         
         if announcement_instance != None:

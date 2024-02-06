@@ -46,7 +46,52 @@ class NextAdmNumber(APIView):
         
         except Exception as e:
             return Response({'message': 'Internal failure', 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+class AddStudentDataBackup(APIView):
+    def post(self, request):
+        try:
+            
+         
+            data = [
+                ("ANANDU", "1111", "9747981367", "10TH CBSE", "A", "physics,chemistry,maths", "BB", "2024", "", "146", "ezv4VhXPRqeh7Es0FfaZhb:APA91bFlhxYJykyOTWKoKg9KQrropt2RNEzeEq4Yzu9Dnko7djDQPNcXzUCf_c55JW3HGWOANzVwLXsmtACQL5L3KMOhyJ5yaCawQOUCiym-yyV_MHZUxlN6oLWruccivdAqmReeMyiA", False),
+                ("MUHD ISHAN P A", "1", "7012764915", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA", "2024", "", "146", "dataSfewQ4eWSn0tM6WyQR:APA91bHxZJN2INhBky4qMHq1N7EdwLez44WHB1AWP7CDoNWjpNly7PSXpU3YKa65rM1kDPKf3lEauOiljWqcdR_lp3nd5UPyYg_EvMkExaarFtpgjhvBUlP4ZmsMMfJBQFnZK--KDw8n", False),
+                ("ZAMEEN P S", "2", "8137976949", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "f_531vTuRJmtO81nP52jXm:APA91bGoDTKGAUPUtMjFKm6ANnuCbau1ClUkF1iE-wzFlyxWA4zwN9G-ov2RZeX-tTuZB-vp9Mywmj_11vcIQiVOt-3edjHlOiFGUg_9Moy9H6kNvrsKZWHMt3ygAK1gCuxqoLlrz_Vb", False),
+                ("FATHIMATHU NISSAR", "3", "9605588729", "10TH CBSE", "A", "physics,chemistry,maths", "MALIK DEENAR PUBLIC SCHOOL ADIVAD", "2024", "", "146", "du1Pa2VLQdiP47eqzfoGee:APA91bH-NHtZFl1yUKJ8k2oNdHcCdvSOj6xM5-bwIStglZmRu-_fZBmE8vYo2uXpJzVkUgksDbvUWe_gBq7joSDt-eVoBEa3HbaoF0V0zDgx-48dBupczbY6Xjj2DTj8-Ah4spjh8gHp", False),
+                ("MUHAMMED THANZEEL C A", "5", "9656583670", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "cM6hKCIlQOSJdW00mlU0sP:APA91bHZuU8X5pXpGu73FIvl5Z31auo8qwhcFICOBIirokwUnHsd1MafgnidYKhkhg33tUFAhdqzOXk239yN_w2qD4v4Fv5IWBnZeuPV5DXGVibvq65a7F2G-jAPCHghSRDQ8dHFiy2d", False),
+                ("Hasna Ansar", "4", "8606166184", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "dDDlljbnTZSqPfF3z6K1_O:APA91bFi5RFMy9UE5FwfB2dMyyLF3ajJmtGfwigq_JvrwqNLULRERBtcxfOBorAIKn88z_zCKwBFBthCMdDbAiQtZbt97t8ibeVTpvseHVYyhQbp1XLBdxa4KZHspUGl4K42V0QK1yN2", False),
+                ("Diya fathima", "6", "7012419985", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "", False),
+                ("NABHAN YASSAR", "7", "7560996153", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "cIrSbBDTRBayl8B87PAaql:APA91bHEvrwfmkAVWlJOepZ0VueQ_GEMGTBc9VCCe8lxomeqM_85rhjNS4CI0gK7HRw69ICdurOmbg62se8xQabBqB6xpcFqj0vvahwOTh-pOQYhXh99JdF7qWwJ8cDup1m2IQw0DBuO", False),
+                ("IHSAN HUSSAIN", "8", "9744623759", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "dQF7c1wdSRSh3RQRAroLR1:APA91bGxxqsDms-TZ1QmnsDS7jBBgV6aytk4tcPZcKvmgl4TMikWE7A_7Wvk3eCAftQ8PYjlLwLEjAFuufkfxhfZCG9j01NixGqhQp4ICylYOPAwelNwHZhopPTiBOCeRaDuNJ1F82YQ", False),
+                ("ISHA RAJESH", "9", "7306128427", "10TH CBSE", "A", "physics,maths,chemistry", "NIRMALA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "fOib1qcNSnCCShvZrTAFMO:APA91bHS_cDMHXGxyv3Y87zajmXn56dp_sijnGJ_q_6u49UFk7B9MCGOGCUagF1A4R2qo1V-WXU4sXb7k1bT3bP3xmEr810pdZozyYHKCaTCIEkHIwJSaZ2zGB6EHDgezvY1nMdd3UFW", False),
+                ("Test User", "10", "7356924029", "TEST BATCH", "A", "physics,maths,chemistry", "Testing School", "2024", "", "160", "", False),
+                ("Faid mohammed", "11", "7356219994", "10TH CBSE", "A", "physics,chemistry,maths", "ILAHIA PUBLIC SCHOOL MUVATTUPUZHA", "2024", "", "146", "cKg88ZLPQfG2vcbmqAxZDE:APA91bEnSb0rFLDMg_V_D92E-OMQGO5C0c-jBodxbUgugo6KhSdKdGrrka-i20s6lwkXsts0Xt40unsNVZfeq05t4haAywFfU--N-P-Qy-MiXc11U38I3eYQy5wTuAYIUne_mzXvWXfk", False),
+                ("Shahma Fathima KV", "12", "50604054", "10TH CBSE", "A", "physics,chemistry,maths", "MES", "2024", "", "146", "", False),
+                ("Vyshnavi Sreekumar", "13", "8837095316", "10TH CBSE", "A", "physics,chemistry,maths", "VIMALA PUBLIC SCHOOL", "2024", "", "146", "f8ml9GsoTgquxAYYO0vKPu:APA91bHfrshY2wFAAIJUG49tl572-aci-188aAZqiD33wcyLL0tI7Ka8k-l7jhlbysxlD1BbcNdtOsyJ50g90iAkeYNltVPzE1CO29VNNAWV3R9kssdQyPbeZLyzKP5YIakwiNbJxQSh", False),
+                ("Afra Fathima M J", "16", "8921353952", "10TH CBSE", "A", "physics,chemistry,maths", "Sree Narayana Vidyapeetam Public school Tripunithura", "2024", "", "146", "dtTJgk08Qw2T_TtaslBhMO:APA91bFEXuwN9EPNByUmA6im5TFtjdkyOGUqIUouESSzRjH5YrCwF0aR36-clXNTvaWv4wRm8HLvQJ6NsgWp2aAws0Mtle7kwS5XaMKbHlGlvIgOkgUTvC2USKqStMqET1oCBEO0SC9A", False),
+                ("Lakshmi Priya Sagar", "201", "8078509127", "12TH CBSE", "A", "maths", "Vidyadhiraja vidyabhavan senior secondary school mekkad", "2024", "", "162", "", False),
+                ("Aisleen Aleya Ajay", "14", "9496079824", "12TH CBSE", "A", "chemistry", "St. Peters snior secondary school, kadayirupp", "2024", "", "162", "cGjgueSRSQOsHhRYBTLKOZ:APA91bHrG8GGmWjR68QhIN6yVwOxWxlvlAL-7uYb40iBNuAthSI3B2Yw_xhNaNL0y0XU4fotjpfS_12Whc8nd580E1ub4y3JbbdzFqFrFuyUizqKwTmxDGLVFnoGviB-j92LYifuq6Ok", False),
+                ("Krishna Pratheesh", "17", "7051625745", "12TH CBSE", "A", "physics,chemistry,maths","Kendriya Vidyalaya, Jalipa Cantt Barmer Rajasthan", "2024", "", "162","fJMoJm_0RxaRCiMQFXjUC_:APA91bHbxtnVo6h7dZ4x5JLGxzbwScRPu4zTY7N6TKQgcZmarAnJ8luCbRgmrTHoYWLBLN4sZVoZQR9ioXsVqNxpigUxdcni-S1-enASO_QzXDV2GCzMsa4GT7OydSa68uHU4HuqhBoz",False)
+            ]
+            
+            for item in data:
+                student = Student.objects.create(
+                    name=item[0],
+                    admission_no=item[1],
+                    phone_no=item[2],
+                    class_name=item[3],
+                    division=item[4],
+                    subjects=item[5],
+                    school_name=item[6],
+                    batch_year=item[7],
+                    class_group=item[9],
+                    device_id=item[10],
+                    restricted=item[11]
+                )
+                
+            return Response({'message': 'Data added successfully'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({'message': 'Internal failure'}, status=status.HTTP_400_BAD_REQUEST)    
 class StudentMethods(APIView):
     def post(self, request):
         
@@ -76,7 +121,7 @@ class StudentMethods(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": serializer.errors},status=status.HTTP_400_BAD_REQUEST)
     
     def get(self, request):
         students = Student.objects.filter(id=request.query_params.get('id'))
