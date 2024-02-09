@@ -159,9 +159,9 @@ CHANNEL_LAYERS = {
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp-relay.brevo.com'
 EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+# EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'qmarktechnolabs@gmail.com'
-EMAIL_HOST_PASSWORD = 'cZP4OvyxEDbtLAVW'
+EMAIL_HOST_PASSWORD = 'xsmtpsib-25ae9e02d9a75958f3b5b041a4dd05be8187bd3190b66db20958478875628d6c-AyXGTJ7BZS6jE5mq'
 
 # Token expiration times in minutes
 ACCESS_TOKEN_EXPIRATION = 120 # Adjust as needed

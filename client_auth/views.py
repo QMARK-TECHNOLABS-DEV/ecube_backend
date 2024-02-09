@@ -13,14 +13,16 @@ from .fast_sms import sendSMS
 from django.utils import timezone 
 import random
 import jwt, json
-
-
-class SendOTP(APIView):
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+class SendOTPPhone(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
-        # Ensure the phone_number is valid (you might want to add more validation)
+  
+        print(phone_number)
+        # Ensure the email_id is valid (you might want to add more validation)
         if not phone_number:
-            return Response({'message': 'Invalid phone_number'}, status=400)
+            return Response({'message': 'Invalid phone number'}, status=400)
         
         phone_number = int(phone_number)
         print(phone_number, type(phone_number))
@@ -38,15 +40,16 @@ class SendOTP(APIView):
                     if str(db_phone_number.phone_no) != '1234567890':
                         # Generate a random OTP (6 digits)
                         try:
-                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-                            
-                            otp_instance = OTP.objects.filter(phone_number=phone_number).all()
+
+                            otp_instance = OTP.objects.filter(credientials=phone_number).all()
                             
                             if otp_instance:
                                 for otp in otp_instance:
                                     otp.delete()
-                                
-                            OTP.objects.create(phone_number=phone_number, code=otp)
+                            
+                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                            
+                            OTP.objects.create(credientials=phone_number, code=otp)
                             
                             response = sendSMS(otp, phone_number)
                             print("sended")
@@ -71,14 +74,14 @@ class SendOTP(APIView):
                         
                         otp = '123456'
                         
-                        otp_instance = OTP.objects.filter(phone_number=phone_number).all()
+                        otp_instance = OTP.objects.filter(credientials=phone_number).all()
                             
                         if otp_instance:
                             for otps in otp_instance:
                                 otps.delete()
                         
                         print(otp)
-                        OTP.objects.create(phone_number=phone_number, code=otp)
+                        OTP.objects.create(credientials=phone_number, code=otp)
                         
                         return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
                 else:
@@ -87,7 +90,83 @@ class SendOTP(APIView):
                 return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class SendOTPEmail(APIView):
+    def post(self, request):
+        email_id = request.data.get('email')
+  
+        print(email_id)
+        # Ensure the email_id is valid (you might want to add more validation)
+        if not email_id:
+            return Response({'message': 'Invalid email id'}, status=status.HTTP_400_BAD_REQUEST)
         
+        print(email_id, type(email_id))
+        db_email_id = Student.objects.filter(email_id=email_id).first()
+        
+        if db_email_id is not None:
+            if db_email_id.restricted == False:
+                
+                no_of_users_signed_in = Token.objects.filter(user_id=db_email_id.id).count()
+                
+                print(no_of_users_signed_in)
+                
+                if no_of_users_signed_in < 2:
+                
+                    if str(db_email_id.email_id) != 'test@gmail.com':
+                        # Generate a random OTP (6 digits)
+                        try:
+
+                            otp_instance = OTP.objects.filter(credientials=email_id).all()
+                            
+                            if otp_instance:
+                                for otp in otp_instance:
+                                    otp.delete()
+                            
+                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                            
+                            print(otp)
+                            OTP.objects.create(credientials=email_id, code=otp)
+                            
+                            subject = 'OTP for Muthookas Ecube'
+            
+                            from_email = 'qmarktechnolabs@gmail.com'
+                            
+                            receipient = [email_id]
+                            html_message = render_to_string('otp_email.html', {'otp': otp})
+
+                            # Send the email with HTML content
+                            send_mail(subject, '', from_email, receipient, html_message=html_message)
+
+                            # Check the response
+                            #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+               
+                            print(f'OTP sent successfully to {email_id}')
+                            return Response({'message': 'OTP sent successfully'})
+                    
+                        except Exception as e:
+                            print(e)
+                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    else:           
+                        
+                        otp = '123456'
+                        
+                        otp_instance = OTP.objects.filter(email_id=email_id).all()
+                            
+                        if otp_instance:
+                            for otps in otp_instance:
+                                otps.delete()
+                        
+                        print(otp)
+                        OTP.objects.create(email_id=email_id, code=otp)
+                        
+                        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'message': 'Maximum number of users signed in'}, status=status.HTTP_400_BAD_REQUEST)       
+            else:
+                return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+             
 class VerifyOTP(APIView):
     def post(self, request):
         # Get the OTP entered by the user from the request data
@@ -95,7 +174,11 @@ class VerifyOTP(APIView):
         phone_number = request.data.get('phone_number')
         
         try:
-            otp = OTP.objects.filter(phone_number=phone_number).first()
+            
+            otp = OTP.objects.filter(credientials=phone_number).first()
+            
+            if otp is None:
+                return Response({'message': 'OTP not found'}, status=status.HTTP_404_NOT_FOUND)
             
             # Ensure both times are in the same timezone-aware format
             current_time = timezone.now()  # Get the current time in the same timezone
@@ -105,6 +188,51 @@ class VerifyOTP(APIView):
                 if entered_otp == str(otp.code):
                 
                     user = Student.objects.filter(phone_no=phone_number).first()
+                    
+                    if user is None:
+                        return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                    
+                    access_token, refresh_token = TokenUtil.generate_tokens(user)
+                    
+                    otp.delete()  
+
+                    return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name, 'class_name': user.class_name, 'batch_year': user.batch_year, 'division': user.division}, status=status.HTTP_200_OK)
+
+                    
+                else:
+                    return Response({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                otp.delete()
+                return Response({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except OTP.DoesNotExist:
+            # Session data for OTP not found
+            return Response({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyOTPEmail(APIView):
+    def post(self, request):
+        # Get the OTP entered by the user from the request data
+        entered_otp = request.data.get('otp')
+        email_id = request.data.get('email')
+        
+        print(email_id)
+        try:
+            
+            
+            otp = OTP.objects.filter(credientials=email_id).first()
+            
+       
+            if otp is None:
+                return Response({'message': 'OTP not found'}, status=status.HTTP_404_NOT_FOUND)
+            # Ensure both times are in the same timezone-aware format
+            current_time = timezone.now()  # Get the current time in the same timezone
+            expiry_time = otp.expiry_time + timedelta(minutes=5)  # Add 5 minutes to expiry_time
+            
+            if expiry_time > current_time:
+                if entered_otp == str(otp.code):
+                
+                    user = Student.objects.filter(email_id=email_id).first()
                     
                     if user is None:
                         return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
