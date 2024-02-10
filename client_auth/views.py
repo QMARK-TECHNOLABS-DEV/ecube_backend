@@ -132,7 +132,7 @@ class SendOTPEmail(APIView):
                             from_email = 'qmarktechnolabs@gmail.com'
                             
                             receipient = [email_id]
-                            html_message = render_to_string('otp_email.html', {'otp': otp})
+                            html_message = render_to_string('otp_email.html', {'otp': otp ,'receipent_name' : db_email_id.name})
 
                             # Send the email with HTML content
                             send_mail(subject, '', from_email, receipient, html_message=html_message)
