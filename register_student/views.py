@@ -9,7 +9,8 @@ from django.db import connection, DatabaseError
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
 from class_updates.models import class_updates_link
-
+from django.db.models.functions import Cast
+from django.db.models import Max, IntegerField
 class StudentSoftDelete(APIView):
     def post(self, request):
         try:
@@ -37,10 +38,13 @@ class StudentSoftDelete(APIView):
 class NextAdmNumber(APIView):
     def get(self, request):
         try:
-            highest_adm_no = Student.objects.all().order_by('-admission_no').first()
+            highest_adm_no = Student.objects.annotate(admission_no_int=Cast('admission_no', IntegerField())).aggregate(max_admission_no=Max('admission_no_int'))['max_admission_no']
+
+            
+            print(highest_adm_no)
             
             if highest_adm_no:
-                return Response({'next_adm_no': int(highest_adm_no.admission_no) + 1}, status=status.HTTP_200_OK)
+                return Response({'next_adm_no': highest_adm_no + 1}, status=status.HTTP_200_OK)
             
             return Response({'next_adm_no': 1}, status=status.HTTP_200_OK)
         
