@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from django.template.loader import render_to_string
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
@@ -16,6 +16,27 @@ from .models import Admin, Token, PasswordResetToken
 from .serializers import UserSerializer
 from django.core.mail import send_mail
 from django.contrib import messages
+from django.conf import settings
+import jwt
+from datetime import datetime, timedelta
+from django.http import HttpResponseBadRequest
+
+
+
+def generate_token(user_id, email):
+    # Set the expiration time for the token (e.g., 1 hour from now)
+    expiration_time = datetime.utcnow() + timedelta(minutes=5)
+    
+    # Create the payload dictionary
+    payload = {
+        'user_id': user_id,
+        'email': email,
+        'exp': expiration_time  # Expiration time
+    }
+    
+    # Replace 'your_secret_key' with your own secret key
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return token
 
 class GetAllUsers(APIView):
     def get(self,request):
@@ -221,29 +242,73 @@ class ForgotPassword(APIView):
     def post(self,request):
        
         email = request.data.get('email')
+        
         try:
             user = Admin.objects.get(email=email)
         except Admin.DoesNotExist:
             user = None
 
         if user is not None:
-            token = default_token_generator.make_token(user)
-            token = urlsafe_base64_encode(force_bytes(token))
-            PasswordResetToken.objects.create(user=user, token=token)
-            reset_link = f"http://{request.get_host()}/reset/{token}/"
+            token = generate_token(user.id, email)
+            
+            reset_link = f"http://{request.get_host()}/admin_auth/reset/password/{token}/"
+            
+            subject = 'Password Reset Mail for Admins in Muthookas Ecube Learning System'
 
-            send_mail(
-                "Password Reset",
-                f"Click the following link to reset your password: {reset_link}",
-                "qmarktechnolabs@gmail.com",
-                [user.email],
-                fail_silently=False,
-            )
-            messages.success(request, "A password reset link has been sent to your email.")
+            from_email = 'qmarktechnolabs@gmail.com'
+            
+            receipient = [email]
+            html_message = render_to_string('reset_mail.html', {'reset_link': reset_link})
+
+            # Send the email with HTML content
+            send_mail(subject, '', from_email, receipient, html_message=html_message)
+
+            return Response({'message': 'Password reset mail sent successfully'}, status=status.HTTP_200_OK)
         else:
-            messages.error(request, "No user with that email address found.")
 
-        return render(request, "password_reset_request.html")
+            return Response({'message': 'No user with that email address found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+class ResetPassword(APIView):
+    def get(self, request, token):
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            expiration_time = datetime.utcfromtimestamp(payload['exp'])
+            current_time = datetime.utcnow()
+
+            if current_time <= expiration_time:
+                return render(request, 'password_change.html', {'validlink': True, 'user_id': payload['user_id']})
+            else:
+                return render(request, 'password_change.html', {'validlink': False})
+        except jwt.ExpiredSignatureError:
+            return HttpResponseBadRequest('Password reset link has expired.')
+        except jwt.InvalidTokenError:
+            return HttpResponseBadRequest('Invalid password reset link.')
+        
+        
+class ResetPasswordSubmit(APIView):
+    def get(self, request):
+        user_id = request.GET['user_id']
+        password = request.GET['password']
+        confirm_password = request.GET['confirm_password']
+        
+        try:
+            
+            if password == confirm_password:
+                admin_instance = Admin.objects.get(id=user_id)
+                
+                admin_instance.password = make_password(password)
+                
+                admin_instance.save()
+                
+                return render(request, 'password_change_success.html')
+            
+            else:
+                return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
 # logout user
 class LogoutUser(APIView):
     def post(self,request):

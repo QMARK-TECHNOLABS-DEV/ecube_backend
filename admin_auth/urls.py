@@ -12,4 +12,6 @@ urlpatterns = [
     path('token/validate/', views.ValidateTokenView.as_view(), name='validate-token'),
     path('token/refresh/', views.RequestAccessToken.as_view(), name='refresh-token'),
     path('forgot/password/', views.ForgotPassword.as_view(), name='forgot-password'),
+    path('reset/password/<token>/', views.ResetPassword.as_view(), name='reset-password'),
+    path('reset/confirm/submit/', views.ResetPasswordSubmit.as_view(), name='reset-password-submit'),
 ]

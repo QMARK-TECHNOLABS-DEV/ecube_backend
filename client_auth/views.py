@@ -91,6 +91,7 @@ class SendOTPPhone(APIView):
         else:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
 class SendOTPEmail(APIView):
     def post(self, request):
         email_id = request.data.get('email')
