@@ -251,7 +251,7 @@ class ForgotPassword(APIView):
         if user is not None:
             token = generate_token(user.id, email)
             
-            reset_link = f"https://{request.get_host()}/admin_auth/reset/password/{token}/"
+            reset_link = f"http://{request.get_host()}/admin_auth/reset/password/{token}/"
             
             subject = 'Password Reset Mail for Admins in Muthookas Ecube Learning System'
 

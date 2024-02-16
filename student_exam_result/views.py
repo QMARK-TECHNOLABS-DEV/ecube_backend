@@ -78,7 +78,13 @@ class ExamResult(APIView):
                 if admission_no is None or exam_name is None:
                     return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                
+                if physics is None:
+                    physics = 0
+                if chemistry is None:
+                    chemistry = 0
+                if maths is None:
+                    maths = 0
+                    
                 # Insert data into the database for each item in the JSON array
                 cursor = connection.cursor()
                 cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
