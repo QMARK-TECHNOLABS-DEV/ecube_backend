@@ -76,11 +76,14 @@ class GetLeaderBoard(APIView):
         # Generate a new access token
         user = Student.objects.get(id=user_id) 
         
+        print(user.id)
+        
         batch_year = user.batch_year
         class_name = user.class_name
         division = user.division
         subject = request.GET.get('subject')
-
+        
+        
         if batch_year is None or class_name is None or division is None:
             return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -101,27 +104,43 @@ class GetLeaderBoard(APIView):
         leaderboard = []
         
         user_rank = {}
-
-        for row in query_results:
-            
-            if row[0] == user.admission_no:
-                user_rank = {
-                    "name": user.name,
-                    "profile_image": "",
-                    "rank": query_results.index(row) + 1,
-                    "mark": row[1],
-                    }
+   
+        try:
+            for row in query_results:
                 
-            other_student = Student.objects.get(admission_no=row[0])
-            
-            leaderboard.append({
-                "admission_no": row[0],
-                "mark": row[1],
-                "name": other_student.name,
-                "profile_image": "",
-            })
+                if row[0] == user.admission_no:
 
-        return Response({'leaderboard': leaderboard,'user_rank': user_rank}, status=status.HTTP_200_OK)
+                    user_rank = {
+                        "name": user.name,
+                        "profile_image": "",
+                        "rank": query_results.index(row) + 1,
+                        "mark": row[1],
+                        }
+                
+                try:  
+                    print(row[0])
+                    other_student = Student.objects.get(admission_no=row[0])
+                    
+                    
+                        
+                    leaderboard.append({
+                        "admission_no": row[0],
+                        "mark": row[1],
+                        "name": other_student.name,
+                        "profile_image": "",
+                    })
+                except Exception as e:
+                    print(e)
+                    pass
+                    
+
+            return Response({'leaderboard': leaderboard,'user_rank': user_rank}, status=status.HTTP_200_OK)
+    
+        except Exception as e:
+            print(e)
+            return Response({"error": f"the error is {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+
     
     
 class GetLeaderBoardByExams(APIView):
