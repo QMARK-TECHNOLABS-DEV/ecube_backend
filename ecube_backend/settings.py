@@ -124,7 +124,7 @@ DATABASES = {
         'NAME': 'ecubeBackend',
         'USER': 'mysuperuser',
         'PASSWORD': 'mysuperuser',
-        'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
+        'HOST': 'server-qmark-1.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
         'PORT': '5432', 
     },
   
@@ -133,7 +133,7 @@ DATABASES = {
         'NAME': 'ecubeBackend',
         'USER': 'mysuperuser',
         'PASSWORD': 'mysuperuser',
-        'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
+        'HOST': 'server-qmark-1.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
         'PORT': '5432', 
 	}
 }
@@ -149,7 +149,7 @@ CHANNEL_LAYERS = {
             'NAME': 'ecubeBackend',
             'USER': 'mysuperuser',
             'PASSWORD': 'mysuperuser',
-            'HOST': 'ecubebackend.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
+            'HOST': 'server-qmark-1.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
             'PORT': '5432', 
         },
     },

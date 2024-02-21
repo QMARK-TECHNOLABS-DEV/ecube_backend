@@ -301,6 +301,7 @@ class ExamResult(APIView):
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         
+        
     def get(self, request):
         try:
             batch_year = request.query_params.get('batch_year')
@@ -324,7 +325,7 @@ class ExamResult(APIView):
             
             if not exam_type:
                 cursor = connection.cursor()
-                cursor.execute(f"SELECT * FROM public.{table_name_examresults}")
+                cursor.execute(f"SELECT DISTINCT(exam) FROM public.{table_name_examresults}")
                 query_results = cursor.fetchall()
             else:   
                 cursor = connection.cursor()
