@@ -30,5 +30,4 @@ urlpatterns = [
     path('student_dashboard/', include('student_dashboard.urls')),
     path('admin_auth/', include('admin_auth.urls')),
     path('class_management/', include('class_management.urls')),
-    path('chat/', include('chat_system.urls')),
 ]

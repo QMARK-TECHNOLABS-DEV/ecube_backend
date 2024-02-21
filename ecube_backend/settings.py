@@ -34,8 +34,6 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    'channels',
-    'channels_postgres',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -51,9 +49,7 @@ INSTALLED_APPS = [
     'admin_auth',
     'class_management',
     'corsheaders',
-    'chat_system',
     'class_updates',
-    'daphne',
     'django.contrib.staticfiles',
 ]
 
@@ -62,10 +58,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://sapadminportal.online.s3-website-us-east-1.amazonaws.com",
     "https://localhost:3000",
-    "https://f5fe-103-161-144-200.ngrok-free.app",
     "https://localhost:4200",
-    "https://ecube-test-67149.web.app",
-    "https://ecube-test-67149.firebaseapp.com",
   ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -126,34 +119,9 @@ DATABASES = {
         'PASSWORD': 'mysuperuser',
         'HOST': 'server-qmark-1.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
         'PORT': '5432', 
-    },
-  
-  	'channels_postgres': {
-		'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'ecubeBackend',
-        'USER': 'mysuperuser',
-        'PASSWORD': 'mysuperuser',
-        'HOST': 'server-qmark-1.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
-        'PORT': '5432', 
-	}
+    }
 }
 
-ASGI_APPLICATION = "ecube_backend.routing.application"
-
-
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_postgres.core.PostgresChannelLayer',
-        'CONFIG': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'ecubeBackend',
-            'USER': 'mysuperuser',
-            'PASSWORD': 'mysuperuser',
-            'HOST': 'server-qmark-1.ctqfph6rodd2.ap-south-1.rds.amazonaws.com',
-            'PORT': '5432', 
-        },
-    },
-}
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
