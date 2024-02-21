@@ -8,7 +8,10 @@ class class_details(models.Model):
     division = models.CharField(max_length=1)
     subjects = models.TextField(default='')
     batch_year = models.TextField(null=False, blank=False,default=0)
-    
+    exam_result = models.DateTimeField(null=True,blank=True)
+    exam_name = models.TextField(blank=True,null=True)
+    attendance = models.DateTimeField(null=True,blank=True)
+    attendance_date = models.TextField(blank=True,null=True)
 
 class Student(models.Model):
 

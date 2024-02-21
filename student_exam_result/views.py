@@ -1,14 +1,15 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from register_student.models import Student
+from register_student.models import Student, class_details
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
-from django.http import JsonResponse
+from ecube_backend.pagination import CustomPageNumberPagination
 from django.db import connection
 import pandas as pd
 import requests
 import json
+from datetime import datetime
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -39,19 +40,22 @@ def send_notification_main(registration,message_title, message_desc, message_typ
     result = send_notification(registration, message_title, message_desc, message_type)
     print(result)
     
-class ExamResult(APIView):
+class ExamResult(APIView, CustomPageNumberPagination):
     def post(self,request):
         try:
+           
             batch_year = request.query_params.get('batch_year')
             class_name = request.query_params.get('class_name')
             division = request.query_params.get('division')
-            
+
+
+            if batch_year is None or class_name is None or division is None:
+                return Response({"message": "batch_year, class_name and division is required"},status=status.HTTP_400_BAD_REQUEST)
+         
             batch_year_notif = batch_year
             class_name_notif = class_name
             division_notif = division
-            
-            if batch_year is None or class_name is None or division is None:
-                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+                       
             
             batch_year = str(batch_year)
             class_name = str(class_name).replace(" ", "")
@@ -133,7 +137,15 @@ class ExamResult(APIView):
                 send_notification_main(device_ids,message_title_exam, message_desc_exam, message_type_exam)
                 
                 send_notification_main(device_ids,message_title_leaderboard, message_desc_leaderboard, message_type_leaderboard)
-                
+            
+            class_group_instance = class_details.objects.get(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif)
+            
+            class_group_instance.exam_result = datetime.now()
+            
+            class_group_instance.exam_name = exam_name
+            
+            class_group_instance.save()
+            
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -142,17 +154,17 @@ class ExamResult(APIView):
         
     def put(self, request):
         try:
-            batch_year = request.query_params.get('batch_year')
-            class_name = request.query_params.get('class_name')
-            division = request.query_params.get('division')
+            batch_year_cap = request.query_params.get('batch_year')
+            class_name_cap = request.query_params.get('class_name')
+            division_cap = request.query_params.get('division')
             
             if batch_year is None or class_name is None or division is None:
                 return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
             
-            batch_year = str(batch_year)
-            class_name = str(class_name).replace(" ", "")
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "")
             class_name = str(class_name).lower()
-            division = str(division).replace(" ", "")
+            division = str(division_cap).replace(" ", "")
             division = str(division).lower()
             
             data = request.data  # Get the JSON array from the request body
@@ -213,7 +225,14 @@ class ExamResult(APIView):
                         return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry, and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
-
+                
+            class_group_instance = class_details.objects.get(batch_year=batch_year_cap, class_name=class_name_cap, division=division_cap)
+            
+            class_group_instance.exam_result = datetime.now()
+            
+            class_group_instance.exam_name = exam_name
+            
+            class_group_instance.save()
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -222,18 +241,18 @@ class ExamResult(APIView):
     
     def delete(self, request):
         try:
-            batch_year = request.query_params.get('batch_year')
-            class_name = request.query_params.get('class_name')
-            division = request.query_params.get('division')
+            batch_year_cap = request.query_params.get('batch_year')
+            class_name_cap = request.query_params.get('class_name')
+            division_cap = request.query_params.get('division')
             
             
             if batch_year is None or class_name is None or division is None:
                 return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
             
-            batch_year = str(batch_year)
-            class_name = str(class_name).replace(" ", "")
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "")
             class_name = str(class_name).lower()
-            division = str(division).replace(" ", "")
+            division = str(division_cap).replace(" ", "")
             division = str(division).lower()
             
             data = request.data  # Get the JSON array from the request body
@@ -294,7 +313,14 @@ class ExamResult(APIView):
                         return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry, and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
-
+                
+            class_group_instance = class_details.objects.get(batch_year=batch_year_cap, class_name=class_name_cap, division=division_cap)
+            
+            class_group_instance.exam_result = None
+            
+            class_group_instance.exam_name = None
+            
+            class_group_instance.save()
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -304,18 +330,28 @@ class ExamResult(APIView):
         
     def get(self, request):
         try:
-            batch_year = request.query_params.get('batch_year')
-            class_name = request.query_params.get('class_name')
-            division = request.query_params.get('division')
+            batch_year_cap = request.query_params.get('batch_year')
+            class_name_cap = request.query_params.get('class_name')
+            division_cap = request.query_params.get('division')
             exam_type = request.query_params.get('exam_type')
             
-            if batch_year is None or class_name is None or division is None:
-                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            batch_year = str(batch_year)
-            class_name = str(class_name).replace(" ", "")
+            if batch_year_cap is None or class_name_cap is None or division_cap is None:
+                class_group_instance = class_details.objects.filter(
+                        exam_result__isnull=False 
+                    ).order_by('-exam_result').first()
+                
+                if class_group_instance is None:
+                    return Response({"message": "Nothing to show here"}, status=status.HTTP_200_OK)
+                else:
+                    batch_year_cap = class_group_instance.batch_year
+                    class_name_cap = class_group_instance.class_name
+                    division_cap = class_group_instance.division
+                    exam_name = class_group_instance.exam_name
+                    
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "")
             class_name = str(class_name).lower()
-            division = str(division).replace(" ", "")
+            division = str(division_cap).replace(" ", "")
             division = str(division).lower()
             
             
@@ -323,34 +359,53 @@ class ExamResult(APIView):
             
             table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_examresults"
             
-            if not exam_type:
-                cursor = connection.cursor()
-                cursor.execute(f"SELECT DISTINCT(exam) FROM public.{table_name_examresults}")
-                query_results = cursor.fetchall()
-            else:   
-                cursor = connection.cursor()
-                cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE exam_name = %s", [exam_type])
-                query_results = cursor.fetchall()
             
+            if not exam_type:
+                
+                exam_type = exam_name
+                
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE exam_name = %s", [exam_type])
+            query_results = cursor.fetchall()
+        
             cursor.close()
             
             exam_results = []
             if query_results:
                 for result in query_results:
-                    student_instance = Student.objects.get(admission_no=result[1])
                     
-                    exam_results.append({
-                        'user_id': student_instance.id,
-                        'name': student_instance.name,
-                        'admission_no': result[1],
-                        'exam_name': result[2],
-                        'physics': result[3],
-                        'chemistry': result[4],
-                        'maths': result[5]
-                    })
+                    try:
+                        student_instance = Student.objects.get(admission_no=result[1])
+                        
+                        exam_results.append({
+                            'user_id': student_instance.id,
+                            'name': student_instance.name,
+                            'admission_no': result[1],
+                            'exam_name': result[2],
+                            'physics': result[3],
+                            'chemistry': result[4],
+                            'maths': result[5]
+                        })
+                    except Exception as e:
+                        print(e)
+                        pass
+                    
+            exam_results = self.paginate_queryset(exam_results, request)
             
-            return Response({'result_data': exam_results}, status=status.HTTP_200_OK)
-        
+            response = {
+                'class_name': class_name_cap,
+                'batch_year': batch_year_cap,
+                'division': division_cap, 
+                'exam_name' : exam_type,
+                'result_data': exam_results,
+                "total_pages": self.page.paginator.num_pages,
+                "has_next": self.page.has_next(),
+                "has_previous": self.page.has_previous(),
+                "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
+            }
+            return Response(response, status=status.HTTP_200_OK)
+    
         except Exception as e:
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             

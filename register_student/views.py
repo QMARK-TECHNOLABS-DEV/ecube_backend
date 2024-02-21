@@ -11,6 +11,7 @@ from client_auth.models import Token
 from class_updates.models import class_updates_link
 from django.db.models.functions import Cast
 from django.db.models import Max, IntegerField
+from ecube_backend.pagination import CustomPageNumberPagination
 class StudentSoftDelete(APIView):
     def post(self, request):
         try:
@@ -254,27 +255,38 @@ class ClassMethods(APIView):
         except Exception as e:  # Catch specific exceptions for debugging
             return Response({"message": "Internal failure", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-        
-    def get(self, request):
-        
-        try: 
-            class_id = request.query_params.get('id')
             
-            if class_id:
-                class_instance = class_details.objects.filter(id=class_id).first()
+    def get(self, request):
+            try: 
+                class_id = request.query_params.get('id')
                 
-                if class_instance:
-                    serializer = ClassDetailsSerializer(class_instance)
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                if class_id:
+                    class_instance = class_details.objects.filter(id=class_id).first()
+                    
+                    if class_instance:
+                        serializer = ClassDetailsSerializer(class_instance)
+                        return Response(serializer.data, status=status.HTTP_200_OK)
+                    else:
+                        return Response({"message": "Class does not exist"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    return Response({"message": "Class does not exist"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                classes = class_details.objects.all()
-                serializer = ClassDetailsSerializer(classes, many=True)
-                
-                return Response({"class_details": serializer.data}, status=status.HTTP_200_OK)
-        except:
-            return Response({"message": "Internal failure"}, status=status.HTTP_400_BAD_REQUEST)
+                    classes = class_details.objects.all()
+                    serialized_data = []
+                    
+                    for class_instance in classes:
+                        students = Student.objects.filter(class_group=class_instance.id)
+                        
+                        class_serializer = ClassDetailsSerializer(class_instance)
+                        class_data = class_serializer.data
+                   
+                   
+                        class_data['total_students'] = students.count()
+                        
+                        serialized_data.append(class_data)
+                    
+                    return Response({"class_details": serialized_data}, status=status.HTTP_200_OK)
+            except Exception as e:
+                print(e)  
+                return Response({"message": "Internal failure"}, status=status.HTTP_400_BAD_REQUEST)
         
     def delete(self, request):
             class_id = request.query_params.get('id')
@@ -349,7 +361,7 @@ class DeviceIdMethods(APIView):
         except Exception as e:  # Catch specific exceptions for debugging
             return Response({"message": "Internal failure", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class StudentBulkMethods(APIView):
+class StudentBulkMethods(APIView, CustomPageNumberPagination):
     
     def post(self, request, format=None):
         
@@ -403,15 +415,26 @@ class StudentBulkMethods(APIView):
             batch_year = request.query_params.get('batch_year')
             class_name = request.query_params.get('class_name')
             division = request.query_params.get('division')
+  
+            students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division).order_by('-id')
             
-            students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division)
-            serializer = StudentDisplaySerializer(students, many=True)
+            students_result = self.paginate_queryset(students, request)
             
+            serializer = StudentDisplaySerializer(students_result, many=True)
+
             if serializer.data == []:
                 return Response({'Message': 'No records found'} ,status=status.HTTP_400_BAD_REQUEST)
             
+            response = {
+                "all_users":serializer.data,
+                "total_pages": self.page.paginator.num_pages,
+                "has_next": self.page.has_next(),
+                "has_previous": self.page.has_previous(),
+                "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
+            }
             
-            return Response({'all_users':serializer.data}, status=status.HTTP_200_OK)
+            return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Message': 'Internal failure', 'error': str(e)} ,status=status.HTTP_400_BAD_REQUEST)
  
