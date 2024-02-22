@@ -22,7 +22,14 @@ class SendOTPPhone(APIView):
         print(phone_number)
         # Ensure the email_id is valid (you might want to add more validation)
         if not phone_number:
-            return Response({'message': 'Invalid phone number'}, status=400)
+            return Response({'message': 'Invalid phone number'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            if str(phone_number)[0] == '+':
+                return Response({'message': 'Invalid phone number, no \'+\' in first'}, status=status.HTTP_400_BAD_REQUEST)
+            elif len(str(phone_number)) != 10:
+                return Response({'message': 'The number should have length of 10'}, status=status.HTTP_400_BAD_REQUEST)
+            elif ' ' or '-' in str(phone_number):
+                return Response({'message': 'No spaces or \'-\' character in the phone number'}, status=status.HTTP_400_BAD_REQUEST)
         
         phone_number = int(phone_number)
         print(phone_number, type(phone_number))
