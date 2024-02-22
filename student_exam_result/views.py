@@ -337,7 +337,8 @@ class ExamResult(APIView, CustomPageNumberPagination):
             
             if batch_year_cap is None or class_name_cap is None or division_cap is None:
                 class_group_instance = class_details.objects.filter(
-                        exam_result__isnull=False 
+                        exam_result__isnull=False,
+                        exam_name__isnull=False
                     ).order_by('-exam_result').first()
                 
                 if class_group_instance is None:

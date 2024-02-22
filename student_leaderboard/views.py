@@ -28,6 +28,14 @@ class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
                     batch_year_cap = class_group_instance.batch_year
                     class_name_cap = class_group_instance.class_name
                     division_cap = class_group_instance.division
+        else:
+            class_group = class_details.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap).first()
+            
+            if not class_group:
+                return Response({"message": "Class Group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                if not class_group.exam_result:
+                    return Response({"message": "No exam results published for this class group"}, status=status.HTTP_400_BAD_REQUEST)
          
         if subject is None:
             subject = "PHYSICS" 
