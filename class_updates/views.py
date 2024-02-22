@@ -3,16 +3,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import class_updates_link, announcements, recordings
 from .serializers import recordings_get_serializer,class_updates_link_serializer, class_updates_link_get_serializer, announcement_serializer, recording_serializer
-from register_student.models import Student
+from register_student.models import Student , class_details
 from client_auth.utils import TokenUtil
 from client_auth.models import Token
-import datetime
+import datetime, requests, json
 from django.utils import timezone
-from django.db.models import ExpressionWrapper, F, TimeField
-from django.db.models.functions import Cast
-import requests
-import json
-from register_student.models import class_details
+from ecube_backend.pagination import CustomPageNumberPagination
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -43,7 +39,7 @@ def send_notification_main(registration,message_title, message_desc, message_typ
     result = send_notification(registration, message_title, message_desc, message_type)
     print(result)
     
-class Class_Updates_Admin(APIView):
+class Class_Updates_Admin(APIView, CustomPageNumberPagination):
     def post(self, request):
         data=request.data
         data['class_name'] = data['class_name'].upper()
@@ -72,19 +68,39 @@ class Class_Updates_Admin(APIView):
         division = request.query_params.get('division')
         
         if class_name == None or batch_year == None or division == None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            class_update_instance = class_updates_link.objects.order_by('-upload_time').first()
+            
+            if not class_update_instance:
+                return Response({'message': 'No class links provided for any class group'}, status=status.HTTP_400_BAD_REQUEST)
+            class_name = class_update_instance.class_name
+            batch_year = class_update_instance.batch_year
+            division = class_update_instance.division
+            
         else:
             class_name = class_name.upper()
             batch_year = batch_year.upper()
             division = division.upper()
             
-            queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
-            serializer = class_updates_link_serializer(queryset, many=True)
-            
-            if serializer.data == []:
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response({"class_links":serializer.data}, status=status.HTTP_200_OK)
+        queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
+        
+        queryset = self.paginate_queryset(queryset, request)
+        
+        serializer = class_updates_link_serializer(queryset, many=True)
+        
+        response = {
+            "class_name":class_name,
+            "batch_year":batch_year,
+            "division":division,
+            "class_links":serializer.data,
+            "total_pages": self.page.paginator.num_pages,
+            "has_next": self.page.has_next(),
+            "has_previous": self.page.has_previous(),
+            "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+            "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,         
+        }
+
+
+        return Response(response, status=status.HTTP_200_OK)
         
         
     def put(self, request):
@@ -380,7 +396,7 @@ class recording_client_side_web(APIView):
             print(e)
             return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST) 
               
-class Announcements(APIView):
+class Announcements(APIView, CustomPageNumberPagination):
     def post(self, request):
         data=request.data
 
@@ -400,12 +416,23 @@ class Announcements(APIView):
     def get(self, request):
         announcement = announcements.objects.all()
         
+        if not announcement:
+            return Response({'message': 'No announcements found...'},status=status.HTTP_400_BAD_REQUEST)
+        
+        announcement = self.paginate_queryset(announcement,request)
+        
         serializer = announcement_serializer(announcement, many=True)
         
-        if announcement == None:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response({"announcements": serializer.data}, status=status.HTTP_200_OK)
+        response={
+            "announcements":serializer.data,
+            "total_pages": self.page.paginator.num_pages,
+            "has_next": self.page.has_next(),
+            "has_previous": self.page.has_previous(),
+            "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+            "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,         
+        }
+        
+        return Response(response, status=status.HTTP_200_OK)
         
     def put(self, request):
         data=request.data
@@ -450,7 +477,7 @@ def get_yt_video_id(url):
     else:
         return ""
     
-class RecordingsLink(APIView):
+class RecordingsLink(APIView, CustomPageNumberPagination):
     def post(self, request):
         try:
             data=request.data
@@ -506,27 +533,46 @@ class RecordingsLink(APIView):
         division = request.query_params.get('division')
         
         if class_name == None or batch_year == None or division == None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            recordings_instance = recordings.objects.order_by('-upload_time').first()
+            
+            if not recordings_instance:
+                return Response({'message': 'No video links provided for any class group'}, status=status.HTTP_400_BAD_REQUEST)
+            class_name = recordings_instance.class_name
+            batch_year = recordings_instance.batch_year
+            division = recordings_instance.division
+            
         else:
             class_name = class_name.upper()
             batch_year = batch_year.upper()
             division = division.upper()
 
             
-            queryset = recordings.objects.filter(
-                class_name=class_name,
-                batch_year=batch_year,
-                division=division,
-            ).order_by('-upload_time')
-            
-            serializer = recording_serializer(queryset, many=True)
-            
-            if serializer.data == []:
-                return Response({"recordings":serializer.data},status=status.HTTP_200_OK)
-            else:
-                return Response({"recordings":serializer.data}, status=status.HTTP_200_OK)
-            
-    
+        queryset = recordings.objects.filter(
+            class_name=class_name,
+            batch_year=batch_year,
+            division=division,
+        ).order_by('-upload_time')
+        
+        queryset = self.paginate_queryset(queryset, request)
+        
+        serializer = recording_serializer(queryset, many=True)
+        
+        response = {
+            "class_name":class_name,
+            "batch_year":batch_year,
+            "division":division,
+            "recordings":serializer.data,
+            "total_pages": self.page.paginator.num_pages,
+            "has_next": self.page.has_next(),
+            "has_previous": self.page.has_previous(),
+            "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+            "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,         
+        }
+
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
     def put(self, request):
         data=request.data
         data['class_name'] = data['class_name'].upper()

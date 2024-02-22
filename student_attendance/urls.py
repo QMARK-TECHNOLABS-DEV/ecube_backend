@@ -7,5 +7,7 @@ urlpatterns = [
     path('attendance/get/', views.GetAttendance.as_view(), name='get-attendance'),
     path('attendance/get/status/', views.GetAttendanceYearStatus.as_view(), name='get-attendance-year-status'),
     path('admin/attendance/get/', views.AdminGetAttendance.as_view(), name='get-admin-attendance'),
+    path('admin/attendance/get/report/', views.AdminGetIndReportAttendance.as_view(), name='get-admin-attendance'),
     path('admin/attendance/get/status/', views.AdminGetAttendanceMonth.as_view(), name='get-admin-attendance-year-status'),
+    path('admin/attendance/get/status/report/', views.AdminGetIndReportAttendanceMonth.as_view(), name='get-admin-attendance-year-status'),
 ]

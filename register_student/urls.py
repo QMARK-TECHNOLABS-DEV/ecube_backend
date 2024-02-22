@@ -17,5 +17,5 @@ urlpatterns = [
     path('update/device/key/', views.DeviceIdMethods.as_view(), name='update-device-key'),
     path('set/restricted/', views.StudentSoftDelete.as_view(), name='set-restricted'),
     path('get/next/admission-no/', views.NextAdmNumber.as_view(), name='get-next-admission-no'), 
-    path('student/backup/post/', views.AddStudentDataBackup.as_view(), name='student-backup-post'),
+   #  path('student/backup/post/', views.AddStudentDataBackup.as_view(), name='student-backup-post'),
 ]

@@ -319,7 +319,119 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
             }
 
         return Response(response_data, status=status.HTTP_200_OK)
+class AdminGetIndReportAttendanceMonth(APIView):
+    def get(self, request):
+        user_id = request.GET.get('user_id')
+        
+        if user_id is None:
+            return Response({'status': 'failure', 'message': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_instance = Student.objects.get(id=user_id)
+        
+        batch_year = user_instance.batch_year
+        class_name = user_instance.class_name
+        division = user_instance.division
+        
+        if batch_year is None or class_name is None or division is None:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        class_details_instance = class_details.objects.filter(batch_year=batch_year, class_name=class_name, division=division).first()
+        
+        if class_details_instance is None:
+            return Response({'status': 'failure', 'message': 'Class does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "")
+        class_name = str(class_name).lower()
+        division = str(division).replace(" ", "")
+        division = str(division).lower()
+        
+
+        app_name = 'register_student'
+        table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
+
+       
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT DISTINCT month_year_number FROM public.{table_name} ORDER BY month_year_number DESC;")
+        distinct_dates = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+   
+        response_data = {
+            'status': 'success',
+            'distinct_dates': distinct_dates,
+        }
+
+  
+        return Response(response_data, status=status.HTTP_200_OK)
+class AdminGetIndReportAttendance(APIView):
+    def get(self, request):
+        user_id = request.GET.get('user_id')
+        
+        if user_id is None:
+            return Response({'status': 'failure', 'message': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_instance = Student.objects.get(id=user_id)
+        
+        batch_year = user_instance.batch_year
+        class_name = user_instance.class_name
+        division = user_instance.division
+        
+        if batch_year is None or class_name is None or division is None:
+            return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        class_details_instance = class_details.objects.filter(batch_year=batch_year, class_name=class_name, division=division).first()
+        
+        if class_details_instance is None:
+            return Response({'status': 'failure', 'message': 'Class does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        batch_year = str(batch_year)
+        class_name = str(class_name).replace(" ", "")
+        class_name = str(class_name).lower()
+        division = str(division).replace(" ", "")
+        division = str(division).lower()
+        
+
+        app_name = 'register_student'
+        table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
+
+        month_year_number = request.GET.get('month_year_number')
     
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s;", [user_instance.admission_no, month_year_number])
+        query_result = cursor.fetchall()
+        cursor.close()
+
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name} WHERE month_year_number = %s;", [month_year_number])
+        distinct_dates = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        
+        # Create an empty dictionary to store attendance information
+        attendance_data = {}
+
+        # Function to convert date strings to objects with year, month, and day fields as integers
+        def date_string_to_object(date_string):
+            day, month, year = map(int, date_string.split('/'))
+            return {"year": f"{year}", "month": f"{month:02d}", "day": f"{day:02d}"}
+
+        # Iterate through the query result and build attendance_data
+        for row in query_result:
+            id, admission_no, month_year, date, status_att = row
+            date_obj = date_string_to_object(date)
+            attendance_data[date] = status_att
+
+        # Iterate through distinct_dates and mark absent if date is missing in attendance_data
+        for date in distinct_dates:
+            if date not in attendance_data:
+                attendance_data[date] = "A"
+
+        # Create the final response dictionary
+        present_days = [date_string_to_object(date) for date, status_att in attendance_data.items() if status_att == "P"]
+        absent_days = [date_string_to_object(date) for date, status_att in attendance_data.items() if status_att == "A"]
+
+        response_data = {"attendance_result": {"present_days": present_days, "absent_days": absent_days}}
+
+        return Response(response_data, status=status.HTTP_200_OK)
         
 class GetAttendance(APIView):
     def get(self, request):
