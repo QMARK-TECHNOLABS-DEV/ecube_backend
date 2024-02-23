@@ -38,10 +38,16 @@ def send_notification_main(registration,message_title, message_desc, message_typ
     
 def split_date(date_str):
     # Split the date string into parts
-    parts = date_str.split(":")[1].split("/")
-
+    if ':' in date_str:
+        parts = date_str.split(":")[1].split("/")
+    elif '-' in date_str:
+        parts = date_str.split("-")[1].split("/")
     # Ensure the year, month, and day are in the desired format
-    year = f"20{parts[2]:02}"
+    if len(parts[2]) == 2:
+        year = f"20{parts[2]:02}"
+    elif len(parts[2]) == 4:
+        year = parts[2]
+        
     month = parts[1].zfill(2)
     day = parts[0].zfill(2)
 
@@ -104,29 +110,46 @@ class AddDailyUpdatesBulk(APIView):
         for index, row in df.iterrows():
             adm_no = row[0]  # Assuming the first column contains student names
             if pd.notna(adm_no) and adm_no != "AD NO":
-                    
-                student_data = {
-                    "admission_no": adm_no,
-                    "date": date_variable,
-                    "on_time": True,
-                    "voice": False if str(row[2]).upper().strip() == "M" else True,
-                    "nb_sub": False if str(row[2]).upper().strip() == "B" else True,
-                    "mob_net": False if str(row[2]).upper().strip() == "R" else True,
-                    "camera": False if str(row[2]).upper().strip() == "V" else True,
-                    "full_class": True,
-                    "activities": sum(1 for val in row[3:] if val == "Y"),
-                    "engagement": False if str(row[2]).upper().strip() == "L" else True,
-                    "remarks": activity_code[str(row[2]).upper().strip()] if str(row[2]).upper().strip() == "O" or str(row[2]).upper().strip() == "N" else ""     
-                }
+                print(batch_year_notif, class_name_notif, division_notif)
                 
+                student_instance = None
                 
-                count_of_y = student_data["activities"]
-                
-                if count_of_y > max_count_of_y:
-                    max_count_of_y = count_of_y
+                try:
+                    
+                    student_instance = Student.objects.get(batch_year=batch_year_notif,class_name=class_name_notif,division=division_notif,admission_no=adm_no)  
+                    
+                except Exception as e:
+                    print(e)
+                    pass   # student_instance = Student.objects.get(admission_no=adm_no)
+                    
+                if student_instance:  
+                    print("admission no ")
+                    
+                    student_data = {
+                        "admission_no": adm_no,
+                        "date": date_variable,
+                        "on_time": True,
+                        "voice": False if str(row[2]).upper().strip() == "M" else True,
+                        "nb_sub": False if str(row[2]).upper().strip() == "B" else True,
+                        "mob_net": False if str(row[2]).upper().strip() == "R" else True,
+                        "camera": False if str(row[2]).upper().strip() == "V" else True,
+                        "full_class": True,
+                        "activities": sum(1 for val in row[3:] if val == "Y"),
+                        "engagement": False if str(row[2]).upper().strip() == "L" else True,
+                        "remarks": activity_code[str(row[2]).upper().strip()] if str(row[2]).upper().strip() in ["O", "N"] else ""     
+                    }
                     
                     
-                data_dict["students"].append(student_data)
+                    count_of_y = student_data["activities"]
+                    
+                    if count_of_y > max_count_of_y:
+                        max_count_of_y = count_of_y
+                        
+                        
+                    data_dict["students"].append(student_data)
+                
+
+                
                 
         app_name = 'register_student'
         
@@ -137,8 +160,15 @@ class AddDailyUpdatesBulk(APIView):
         try: 
             
             for student in data_dict["students"]:
-                student["overall_performance_percentage"] = int((int(student["activities"]) / int(max_count_of_y))* 50) + 25 if student['nb_sub'] else 0 + 25 if student['engagement'] else 0
-                student["activities"] =  f"{student['activities']}/{max_count_of_y}"
+
+                if max_count_of_y > 0:
+                    student["overall_performance_percentage"] = int((int(student["activities"]) / int(max_count_of_y))* 50) + 25 if student['nb_sub'] else 0 + 25 if student['engagement'] else 0
+                    print(max_count_of_y)          
+                    student["activities"] =  f"{student['activities']}/{max_count_of_y}"
+                elif max_count_of_y == 0:
+                    student["overall_performance_percentage"] = 25 if student['nb_sub'] else 0 + 25 if student['engagement'] else 0
+                    print(max_count_of_y)          
+                    student["activities"] =  "0"
                 student["overall_performance"] = "EXCELLENT" if student["overall_performance_percentage"] >= 85 else "GOOD" if student["overall_performance_percentage"] >= 50 else "AVERAGE" if student["overall_performance_percentage"] > 25 else "POOR"
                 
                 print("Before insert")

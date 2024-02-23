@@ -231,6 +231,7 @@ class AdminGetAttendanceMonth(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
 class AdminGetAttendance(APIView,CustomPageNumberPagination):
     def get(self, request):
         

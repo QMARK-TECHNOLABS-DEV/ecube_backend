@@ -424,7 +424,7 @@ class Announcements(APIView, CustomPageNumberPagination):
         serializer = announcement_serializer(announcement, many=True)
         
         response={
-            "announcements":serializer.data,
+            "announcements": serializer.data,
             "total_pages": self.page.paginator.num_pages,
             "has_next": self.page.has_next(),
             "has_previous": self.page.has_previous(),
