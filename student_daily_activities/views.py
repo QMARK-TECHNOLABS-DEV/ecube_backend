@@ -118,6 +118,7 @@ class AddDailyUpdatesBulk(APIView):
                     
                     student_instance = Student.objects.get(batch_year=batch_year_notif,class_name=class_name_notif,division=division_notif,admission_no=adm_no)  
                     
+
                 except Exception as e:
                     print(e)
                     pass   # student_instance = Student.objects.get(admission_no=adm_no)
@@ -172,9 +173,30 @@ class AddDailyUpdatesBulk(APIView):
                 student["overall_performance"] = "EXCELLENT" if student["overall_performance_percentage"] >= 85 else "GOOD" if student["overall_performance_percentage"] >= 50 else "AVERAGE" if student["overall_performance_percentage"] > 25 else "POOR"
                 
                 print("Before insert")
-                cursor.execute(f"INSERT INTO public.{table_name} (admission_no, date, on_time, voice, nb_sub, mob_net, camera, full_class, activities, engagement, overall_performance_percentage, overall_performance, remarks) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [str(student['admission_no']), student['date'], student['on_time'], student['voice'], student['nb_sub'], student['mob_net'], student['camera'], student['full_class'], student['activities'], student['engagement'], student['overall_performance_percentage'], student['overall_performance'], student['remarks']])
-                print("After insert")
-                
+                sql_query = f"""
+                    INSERT INTO public.{table_name} (admission_no, date, on_time, voice, nb_sub, mob_net, camera, full_class, activities, engagement, overall_performance_percentage, overall_performance, remarks) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (admission_no, date) DO UPDATE
+                    SET 
+                        on_time = EXCLUDED.on_time,
+                        voice = EXCLUDED.voice,
+                        nb_sub = EXCLUDED.nb_sub,
+                        mob_net = EXCLUDED.mob_net,
+                        camera = EXCLUDED.camera,
+                        full_class = EXCLUDED.full_class,
+                        activities = EXCLUDED.activities,
+                        engagement = EXCLUDED.engagement,
+                        overall_performance_percentage = EXCLUDED.overall_performance_percentage,
+                        overall_performance = EXCLUDED.overall_performance,
+                        remarks = EXCLUDED.remarks
+                """
+
+                cursor.execute(sql_query, (
+                    str(student['admission_no']), student['date'], student['on_time'], student['voice'], student['nb_sub'], 
+                    student['mob_net'], student['camera'], student['full_class'], student['activities'], student['engagement'], 
+                    student['overall_performance_percentage'], student['overall_performance'], student['remarks']
+                ))
+                                                
             cursor.close()
             student_list = Student.objects.filter(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif).values('device_id')
             

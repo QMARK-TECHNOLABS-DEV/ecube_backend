@@ -64,6 +64,11 @@ class DailyUpdates(models.Model):
     remarks = models.TextField(null=True, blank=True)
     
     
+    class Meta:
+
+        unique_together = ['admission_no', 'date']
+    
+    
 def create_dynamic_models(model_names):
     base_models = [ExamResults, LeaderBoard, Attendance, DailyUpdates]
 

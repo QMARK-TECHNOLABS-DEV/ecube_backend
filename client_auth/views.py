@@ -15,6 +15,8 @@ import random
 import jwt, json
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+
+
 class SendOTPPhone(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
@@ -24,7 +26,9 @@ class SendOTPPhone(APIView):
         if not phone_number:
             return Response({'message': 'Invalid phone number'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            if str(phone_number)[0] == '+':
+            if str(phone_number) == '1234567890':
+                pass
+            elif str(phone_number)[0] == '+':
                 return Response({'message': 'Invalid phone number, no \'+\' in first'}, status=status.HTTP_400_BAD_REQUEST)
             elif len(str(phone_number)) != 10:
                 return Response({'message': 'The number should have length of 10'}, status=status.HTTP_400_BAD_REQUEST)
@@ -348,11 +352,33 @@ class LogoutView(APIView):
             _, access_token = authorization_header.split()
 
             token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            payload = TokenUtil.decode_token(token_key.access_token)
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = payload.get('id')
+
+            if not user_id:
+                return JsonResponse({'error': 'The refresh token is not associated with a user.'}, status=401)
+
+            # Generate a new access token
+            user = Student.objects.get(id=user_id)
+            
             if not access_token:
                 return Response({'error': 'Access token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
             if TokenUtil.is_token_valid(access_token):
                 TokenUtil.blacklist_token(access_token)
+                
+                user.device_id = ''
+                user.save()
                 
                 return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
             else:
