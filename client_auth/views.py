@@ -32,7 +32,8 @@ class SendOTPPhone(APIView):
                 return Response({'message': 'Invalid phone number, no \'+\' in first'}, status=status.HTTP_400_BAD_REQUEST)
             elif len(str(phone_number)) != 10:
                 return Response({'message': 'The number should have length of 10'}, status=status.HTTP_400_BAD_REQUEST)
-            elif ' ' or '-' in str(phone_number):
+            elif ' ' in str(phone_number) or '-' in str(phone_number):
+                print(phone_number)
                 return Response({'message': 'No spaces or \'-\' character in the phone number'}, status=status.HTTP_400_BAD_REQUEST)
         
         phone_number = int(phone_number)
@@ -42,9 +43,14 @@ class SendOTPPhone(APIView):
         if db_phone_number is not None:
             if db_phone_number.restricted == False:
                 
+                # try:
                 no_of_users_signed_in = Token.objects.filter(user_id=db_phone_number.id).count()
                 
                 print(no_of_users_signed_in)
+                # except Exception as e:
+                #     print(e)
+                #     no_of_users_signed_in = 0
+                #     pass
                 
                 if no_of_users_signed_in < 2:
                 
@@ -66,7 +72,7 @@ class SendOTPPhone(APIView):
                             print("sended")
                             response_data = json.loads(response)
                             
-                            
+                            # return_value = True
                             # Access the 'return' key
                             return_value = response_data.get('return')
                             # Check the response

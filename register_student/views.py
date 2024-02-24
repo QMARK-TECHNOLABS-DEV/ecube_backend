@@ -352,6 +352,7 @@ class DeviceIdMethods(APIView):
             student_instance = Student.objects.filter(id=user_id).first()
                 
             if student_instance:
+                
                 student_instance.device_id = device_id
                 student_instance.save()
                     
