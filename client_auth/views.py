@@ -42,67 +42,55 @@ class SendOTPPhone(APIView):
         
         if db_phone_number is not None:
             if db_phone_number.restricted == False:
-                
-                # try:
-                no_of_users_signed_in = Token.objects.filter(user_id=db_phone_number.id).count()
-                
-                print(no_of_users_signed_in)
-                # except Exception as e:
-                #     print(e)
-                #     no_of_users_signed_in = 0
-                #     pass
-                
-                if no_of_users_signed_in < 2:
-                
-                    if str(db_phone_number.phone_no) != '1234567890':
-                        # Generate a random OTP (6 digits)
-                        try:
+            
+                if str(db_phone_number.phone_no) != '1234567890':
+                    # Generate a random OTP (6 digits)
+                    try:
 
-                            otp_instance = OTP.objects.filter(credientials=phone_number).all()
-                            
-                            if otp_instance:
-                                for otp in otp_instance:
-                                    otp.delete()
-                            
-                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-                            
-                            OTP.objects.create(credientials=phone_number, code=otp)
-                            
-                            response = sendSMS(otp, phone_number)
-                            print("sended")
-                            response_data = json.loads(response)
-                            
-                            # return_value = True
-                            # Access the 'return' key
-                            return_value = response_data.get('return')
-                            # Check the response
-                            #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                            if return_value == True:
-                                print(f'OTP sent successfully to {phone_number}')
-                                return Response({'message': 'OTP sent successfully'})
-                            else:
-                                print('Failed to send OTP')
-                                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                            
-                        except Exception as e:
-                            print(e)
-                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    else:           
-                        
-                        otp = '123456'
-                        
                         otp_instance = OTP.objects.filter(credientials=phone_number).all()
-                            
-                        if otp_instance:
-                            for otps in otp_instance:
-                                otps.delete()
                         
-                        print(otp)
+                        if otp_instance:
+                            for otp in otp_instance:
+                                otp.delete()
+                        
+                        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                        
                         OTP.objects.create(credientials=phone_number, code=otp)
                         
-                        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'message': 'Maximum number of users signed in'}, status=status.HTTP_400_BAD_REQUEST)       
+                        response = sendSMS(otp, phone_number)
+                        print("sended")
+                        response_data = json.loads(response)
+                        
+                        # return_value = True
+                        # Access the 'return' key
+                        return_value = response_data.get('return')
+                        # Check the response
+                        #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                        if return_value == True:
+                            print(f'OTP sent successfully to {phone_number}')
+                            return Response({'message': 'OTP sent successfully'})
+                        else:
+                            print('Failed to send OTP')
+                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        
+                    except Exception as e:
+                        print(e)
+                        return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:           
+                    
+                    otp = '123456'
+                    
+                    otp_instance = OTP.objects.filter(credientials=phone_number).all()
+                        
+                    if otp_instance:
+                        for otps in otp_instance:
+                            otps.delete()
+                    
+                    print(otp)
+                    OTP.objects.create(credientials=phone_number, code=otp)
+                    
+                    return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+
             else:
                 return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
         else:
@@ -123,63 +111,60 @@ class SendOTPEmail(APIView):
         
         if db_email_id is not None:
             if db_email_id.restricted == False:
-                
-                no_of_users_signed_in = Token.objects.filter(user_id=db_email_id.id).count()
-                
-                print(no_of_users_signed_in)
-                
-                if no_of_users_signed_in < 2:
-                
-                    if str(db_email_id.email_id) != 'test@gmail.com':
-                        # Generate a random OTP (6 digits)
-                        try:
 
-                            otp_instance = OTP.objects.filter(credientials=email_id).all()
-                            
-                            if otp_instance:
-                                for otp in otp_instance:
-                                    otp.delete()
-                            
-                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-                            
-                            print(otp)
-                            OTP.objects.create(credientials=email_id, code=otp)
-                            
-                            subject = 'OTP for Muthookas Ecube'
-            
-                            from_email = 'qmarktechnolabs@gmail.com'
-                            
-                            receipient = [email_id]
-                            html_message = render_to_string('otp_email.html', {'otp': otp ,'receipent_name' : db_email_id.name})
+                if str(db_email_id.email_id) != 'test@gmail.com':
+                    # Generate a random OTP (6 digits)
+                    try:
 
-                            # Send the email with HTML content
-                            send_mail(subject, '', from_email, receipient, html_message=html_message)
-
-                            # Check the response
-                            #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-               
-                            print(f'OTP sent successfully to {email_id}')
-                            return Response({'message': 'OTP sent successfully'})
-                    
-                        except Exception as e:
-                            print(e)
-                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    else:           
+                        otp_instance = OTP.objects.filter(credientials=email_id).all()
                         
-                        otp = '123456'
-                        
-                        otp_instance = OTP.objects.filter(email_id=email_id).all()
-                            
                         if otp_instance:
-                            for otps in otp_instance:
-                                otps.delete()
+                            for otp in otp_instance:
+                                otp.delete()
+                        
+                        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
                         
                         print(otp)
-                        OTP.objects.create(email_id=email_id, code=otp)
+                        OTP.objects.create(credientials=email_id, code=otp)
                         
-                        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'message': 'Maximum number of users signed in'}, status=status.HTTP_400_BAD_REQUEST)       
+                        subject = 'OTP for Muthookas Ecube'
+        
+                        from_email = 'qmarktechnolabs@gmail.com'
+                        
+                        receipient = [email_id]
+                        html_message = render_to_string('otp_email.html', {'otp': otp ,'receipent_name' : db_email_id.name})
+
+                        # Send the email with HTML content
+                        send_mail(subject, '', from_email, receipient, html_message=html_message)
+
+                        # Check the response
+                        #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            
+                        print(f'OTP sent successfully to {email_id}')
+                        return Response({'message': 'OTP sent successfully'})
+                
+                    except Exception as e:
+                        print(e)
+                        return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:           
+                    
+                    otp = '123456'
+                    
+                    otp_instance = OTP.objects.filter(credientials=email_id).all()
+                        
+                    if otp_instance:
+                        for otps in otp_instance:
+                            try:
+                                otps.delete()
+                            except Exception as e:
+                                print(e)
+                                pass
+                    
+                    print(otp)
+                    OTP.objects.create(credientials=email_id, code=otp)
+                    
+                    return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+    
             else:
                 return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
         else:
