@@ -417,7 +417,7 @@ class StudentBulkMethods(APIView, CustomPageNumberPagination):
             class_name = request.query_params.get('class_name')
             division = request.query_params.get('division')
   
-            students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division).order_by('-id')
+            students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division).order_by('name')
             
             students_result = self.paginate_queryset(students, request)
             

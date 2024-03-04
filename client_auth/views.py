@@ -19,83 +19,86 @@ from django.template.loader import render_to_string
 
 class SendOTPPhone(APIView):
     def post(self, request):
-        phone_number = request.data.get('phone_number')
-  
-        print(phone_number)
-        # Ensure the email_id is valid (you might want to add more validation)
-        if not phone_number:
-            return Response({'message': 'Invalid phone number'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            if str(phone_number) == '1234567890':
-                pass
-            elif str(phone_number)[0] == '+':
-                return Response({'message': 'Invalid phone number, no \'+\' in first'}, status=status.HTTP_400_BAD_REQUEST)
-            elif len(str(phone_number)) != 10:
-                return Response({'message': 'The number should have length of 10'}, status=status.HTTP_400_BAD_REQUEST)
-            elif ' ' in str(phone_number) or '-' in str(phone_number):
-                print(phone_number)
-                return Response({'message': 'No spaces or \'-\' character in the phone number'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        phone_number = int(phone_number)
-        print(phone_number, type(phone_number))
-        db_phone_number = Student.objects.filter(phone_no=phone_number).first()
-        
-        if db_phone_number is not None:
-            if db_phone_number.restricted == False:
+        try:
+            phone_number = request.data.get('phone_number')
+    
+            print(phone_number)
+            # Ensure the email_id is valid (you might want to add more validation)
+            if not phone_number:
+                return Response({'message': 'Invalid phone number'}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                if str(phone_number) == '1234567890':
+                    pass
+                elif str(phone_number)[0] == '+':
+                    return Response({'message': 'Invalid phone number, no \'+\' in first'}, status=status.HTTP_400_BAD_REQUEST)
+                elif len(str(phone_number)) != 10:
+                    return Response({'message': 'The number should have length of 10'}, status=status.HTTP_400_BAD_REQUEST)
+                elif ' ' in str(phone_number) or '-' in str(phone_number):
+                    print(phone_number)
+                    return Response({'message': 'No spaces or \'-\' character in the phone number'}, status=status.HTTP_400_BAD_REQUEST)
             
-                if str(db_phone_number.phone_no) != '1234567890':
-                    # Generate a random OTP (6 digits)
-                    try:
+            phone_number = int(phone_number)
+            print(phone_number, type(phone_number))
+            db_phone_number = Student.objects.filter(phone_no=phone_number).first()
+            
+            if db_phone_number is not None:
+                if db_phone_number.restricted == False:
+                
+                    if str(db_phone_number.phone_no) != '1234567890':
+                        # Generate a random OTP (6 digits)
+                        try:
 
+                            otp_instance = OTP.objects.filter(credientials=phone_number).all()
+                            
+                            if otp_instance:
+                                for otp in otp_instance:
+                                    otp.delete()
+                            
+                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                            
+                            OTP.objects.create(credientials=phone_number, code=otp)
+                            
+                            response = sendSMS(otp, phone_number)
+                            print("sended")
+                            response_data = json.loads(response)
+                            
+                            # return_value = True
+                            # Access the 'return' key
+                            return_value = response_data.get('return')
+                            # Check the response
+                            #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                            if return_value == True:
+                                print(f'OTP sent successfully to {phone_number}')
+                                return Response({'message': 'OTP sent successfully'})
+                            else:
+                                print('Failed to send OTP')
+                                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                            
+                        except Exception as e:
+                            print(e)
+                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    else:           
+                        
+                        otp = '123456'
+                        
                         otp_instance = OTP.objects.filter(credientials=phone_number).all()
-                        
+                            
                         if otp_instance:
-                            for otp in otp_instance:
-                                otp.delete()
+                            for otps in otp_instance:
+                                otps.delete()
                         
-                        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-                        
+                        print(otp)
                         OTP.objects.create(credientials=phone_number, code=otp)
                         
-                        response = sendSMS(otp, phone_number)
-                        print("sended")
-                        response_data = json.loads(response)
-                        
-                        # return_value = True
-                        # Access the 'return' key
-                        return_value = response_data.get('return')
-                        # Check the response
-                        #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                        if return_value == True:
-                            print(f'OTP sent successfully to {phone_number}')
-                            return Response({'message': 'OTP sent successfully'})
-                        else:
-                            print('Failed to send OTP')
-                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                        
-                    except Exception as e:
-                        print(e)
-                        return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                else:           
-                    
-                    otp = '123456'
-                    
-                    otp_instance = OTP.objects.filter(credientials=phone_number).all()
-                        
-                    if otp_instance:
-                        for otps in otp_instance:
-                            otps.delete()
-                    
-                    print(otp)
-                    OTP.objects.create(credientials=phone_number, code=otp)
-                    
-                    return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+                        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
 
+                else:
+                    return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
             else:
-                return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
+                return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(e)
+            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SendOTPEmail(APIView):
     def post(self, request):

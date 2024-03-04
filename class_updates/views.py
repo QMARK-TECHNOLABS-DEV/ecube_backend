@@ -128,7 +128,7 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
             if serializer.is_valid():
                 serializer.save()
                 
-                students_instance = Student.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).values('device_id')
+                # students_instance = Student.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).values('device_id')
                 
                 # if students_instance:
                 #     device_ids = [student['device_id'] for student in students_instance]
