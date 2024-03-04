@@ -60,19 +60,18 @@ class SendOTPPhone(APIView):
                             
                             response = sendSMS(otp, phone_number)
                             print("sended")
-                            response_data = json.loads(response)
-                            
-                            # return_value = True
-                            # Access the 'return' key
-                            return_value = response_data.get('return')
+
                             # Check the response
-                            #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                            # if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                            response_data = json.loads(response)
+                        
+                            return_value = response_data.get('return')
                             if return_value == True:
                                 print(f'OTP sent successfully to {phone_number}')
                                 return Response({'message': 'OTP sent successfully'})
                             else:
                                 print('Failed to send OTP')
-                                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
                             
                         except Exception as e:
                             print(e)
