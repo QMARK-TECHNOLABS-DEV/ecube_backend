@@ -146,13 +146,112 @@ class StudentMethods(APIView):
         return Response({'Message': 'Record does not  exist'},status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request):
-        students = Student.objects.filter(id=request.GET.get('id'))
         
-        if students.exists():
-            students.update(**request.data)
-            return Response({'Message': 'Record successfully updated'} ,status=status.HTTP_200_OK)
+        user_id = request.query_params.get('id')
+        
+        data = {}
+        
+        students = Student.objects.filter(id=user_id).first()
+        
+        print(students)
+        old_batch_year = request.data['old_batch_year']
+        old_class_name = request.data['old_class_name']
+        old_division = request.data['old_division']
+        
+        new_batch_year = request.data['new_batch_year']
+        new_class_name = request.data['new_class_name']
+        new_division = request.data['new_division']
+        
+        print(old_batch_year, old_class_name, old_division)
+        if students is not None:
+            if old_batch_year != new_batch_year or old_class_name != new_class_name or old_division != new_division:
+                class_instance = class_details.objects.filter(batch_year=new_batch_year,class_name=new_class_name,division=new_division)
+                
+                if not class_instance:
+                    return Response({'message': 'No such class group'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                data['name'] = request.data['name']
+                data['admission_no'] = request.data['admission_no']
+                data['phone_no'] = request.data['phone_no']
+                data['school_name'] = request.data['school_name']
+                data['subjects'] = request.data['subjects']
+                data['email_id'] = request.data['email_id']
+                data['batch_year'] = new_batch_year
+                data['class_name'] = new_class_name
+                data['division'] = new_division
+                data['class_group'] = class_instance[0].id
+                
+                new_table_name = f"{new_batch_year}_{new_class_name}_{new_division}".replace(" ","").lower()
+                
+                old_table_name = f"{old_batch_year}_{old_class_name}_{old_division}".replace(" ","").lower()
+                
+                app_name = 'register_student_'
+                
+                feature_group_id = ['_examresults', '_leaderboard', '_attendance', '_dailyupdates']
+                
+
+                final_new_table_name = f"{app_name}{app_name}{new_table_name}{feature_group_id[0]}"
+                final_old_table_name = f"{app_name}{app_name}{old_table_name}{feature_group_id[0]}"
+                
+                with connection.cursor() as cur:
+                
+                    try:                       
+                        cur.execute(f"INSERT INTO public.{final_new_table_name} (admission_no, exam_name, physics, chemistry, maths) SELECT admission_no, exam_name, physics, chemistry, maths FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+                        cur.execute(f"DELETE FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+
+                    except Exception as e:
+                        print(e)
+                        
+                final_new_table_name = f"{app_name}{app_name}{new_table_name}{feature_group_id[1]}"
+                final_old_table_name = f"{app_name}{app_name}{old_table_name}{feature_group_id[1]}"
+                
+                with connection.cursor() as cur:
+                
+                    try:                       
+                        cur.execute(f"INSERT INTO public.{final_new_table_name} (admission_no, physics, chemistry, maths) SELECT admission_no, physics, chemistry, maths FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+                        cur.execute(f"DELETE FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+
+                    except Exception as e:
+                        print(e)
+                        
+                final_new_table_name = f"{app_name}{app_name}{new_table_name}{feature_group_id[2]}"
+                final_old_table_name = f"{app_name}{app_name}{old_table_name}{feature_group_id[2]}"
+                
+                with connection.cursor() as cur:
+                
+                    try:                       
+                        cur.execute(f"INSERT INTO public.{final_new_table_name} (admission_no, month_year_number, date, status) SELECT admission_no, month_year_number, date, status FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+                        cur.execute(f"DELETE FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+
+
+                    except Exception as e:
+                        print(e)
+                        
+                final_new_table_name = f"{app_name}{app_name}{new_table_name}{feature_group_id[3]}"
+                final_old_table_name = f"{app_name}{app_name}{old_table_name}{feature_group_id[3]}"
+                
+                with connection.cursor() as cur:
+                
+                    try:                       
+                        cur.execute(f"INSERT INTO public.{final_new_table_name} (admission_no, date, on_time, voice, nb_sub, mob_net, camera, full_class, activities, engagement, overall_performance_percentage, overall_performance, remarks) SELECT admission_no, date, on_time, voice, nb_sub, mob_net, camera, full_class, activities, engagement, overall_performance_percentage, overall_performance, remarks FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+                        cur.execute(f"DELETE FROM public.{final_old_table_name} WHERE admission_no = %s", [students.admission_no])
+
+
+                    except Exception as e:
+                        print(e)
+                    
+               
+                                        
+
+            serializer = StudentSerializer(students, data=data)
+            
+            if serializer.is_valid():
+                serializer.save()
+          
+            return Response({'Message': 'Record successfully updated'} ,status=status.HTTP_200_OK)        
+
       
-        return Response({'Message': 'Record does not  exist'},status=status.HTTP_400_BAD_REQUEST)
+        return Response({'Message': 'Record does not exist'},status=status.HTTP_400_BAD_REQUEST)
     
 
 class ClassMethods(APIView):
