@@ -162,24 +162,27 @@ class StudentMethods(APIView):
         new_class_name = request.data['new_class_name']
         new_division = request.data['new_division']
         
+        data['name'] = request.data['name']
+        data['admission_no'] = request.data['admission_no']
+        data['phone_no'] = request.data['phone_no']
+        data['school_name'] = request.data['school_name']
+        data['subjects'] = request.data['subjects']
+        data['email_id'] = request.data['email_id']  
+        
+        class_instance = class_details.objects.filter(batch_year=new_batch_year,class_name=new_class_name,division=new_division)
+
+        if not class_instance:
+            return Response({'message': 'No such class group'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        data['batch_year'] = new_batch_year
+        data['class_name'] = new_class_name
+        data['division'] = new_division
+        data['class_group'] = class_instance[0].id
+        
         print(old_batch_year, old_class_name, old_division)
         if students is not None:
             if old_batch_year != new_batch_year or old_class_name != new_class_name or old_division != new_division:
-                class_instance = class_details.objects.filter(batch_year=new_batch_year,class_name=new_class_name,division=new_division)
-                
-                if not class_instance:
-                    return Response({'message': 'No such class group'}, status=status.HTTP_400_BAD_REQUEST)
-                
-                data['name'] = request.data['name']
-                data['admission_no'] = request.data['admission_no']
-                data['phone_no'] = request.data['phone_no']
-                data['school_name'] = request.data['school_name']
-                data['subjects'] = request.data['subjects']
-                data['email_id'] = request.data['email_id']
-                data['batch_year'] = new_batch_year
-                data['class_name'] = new_class_name
-                data['division'] = new_division
-                data['class_group'] = class_instance[0].id
                 
                 new_table_name = f"{new_batch_year}_{new_class_name}_{new_division}".replace(" ","").lower()
                 
