@@ -40,6 +40,63 @@ def send_notification_main(registration,message_title, message_desc, message_typ
     # registration = ['dREWgJKnS5yw3KJ_0w0OaS:APA91bGFBliKfQI4itzjmdhDRCqkBDywYeSQjJvIB1f3bHYEF9QLuD70lHyi3AI9QXDofqxzbjaXXEKdeolg8bGboQQPQXeJuLluw0K3Y-h_GEhHg47Ln_OiioGMiWKpqYX-xnXSUk7b']
     result = send_notification(registration, message_title, message_desc, message_type)
     print(result)
+    
+class DeleteAttendance(APIView):
+    def delete(self,request):
+        try:
+            batch_year = request.GET.get('batch_year')
+            class_name = request.GET.get('class_name')
+            division = request.GET.get('division')
+            admission_no = request.GET.get('admission_no')
+            
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+            
+            app_name = 'register_student'
+            table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
+            
+            cursor = connection.cursor()
+            cursor.execute(f"DELETE FROM public.{table_name} WHERE admission_no = %s;", [admission_no])
+            cursor.close()
+            
+            return Response({'status': 'successfully deleted'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class DeleteAttendanceBulk(APIView):
+    def delete(self,request):
+        try:
+            batch_year = request.GET.get('batch_year')
+            class_name = request.GET.get('class_name')
+            division = request.GET.get('division')
+            date = request.GET.get('date')
+            
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+            
+            app_name = 'register_student'
+            table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
+            
+            cursor = connection.cursor()
+            cursor.execute(f"DELETE FROM public.{table_name} WHERE date = %s;", [date])
+            cursor.close()
+            
+            return Response({'status': 'successfully deleted'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 class AddAttendance(APIView):
     def post(self, request):
         
