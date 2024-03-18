@@ -103,6 +103,7 @@ class AddAttendance(APIView):
         batch_year = request.GET.get('batch_year')
         class_name = request.GET.get('class_name')
         division = request.GET.get('division')
+        subject = request.GET.get('subject')
         
         if batch_year is None or class_name is None or division is None:
             return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -126,7 +127,7 @@ class AddAttendance(APIView):
         table_name = app_name + app_name+  batch_year + "_" + class_name + "_" + division + "_attendance"
         
         cursor = connection.cursor()
-        cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status) VALUES (%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student])
+        cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status,subject) VALUES (%s,%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student,subject])
         cursor.close()
         return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
@@ -136,6 +137,7 @@ class AddAttendanceBulk(APIView):
         class_name = request.GET.get('class_name')
         division = request.GET.get('division')
         date_attendance = request.GET.get('date')
+        subject = request.GET.get('subject')
         
         class_name_notif = class_name
         batch_year_notif = batch_year
@@ -219,7 +221,7 @@ class AddAttendanceBulk(APIView):
                         month_year_number = date[3:]
 
                         if admission_no is not None and month_year_number is not None and date is not None and status_student is not None:
-                            cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status) VALUES (%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student])
+                            cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status,subject) VALUES (%s,%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student,subject])
                             
                             print("Inserted")
                             cursor.close()
@@ -254,6 +256,7 @@ class AdminGetAttendanceMonth(APIView):
         batch_year_cap = request.query_params.get('batch_year')
         class_name_cap = request.query_params.get('class_name')
         division_cap = request.query_params.get('division')
+        subject = request.query_params.get('subject')
         
         if batch_year_cap is None or class_name_cap is None or division_cap is None:
             return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -275,7 +278,7 @@ class AdminGetAttendanceMonth(APIView):
 
         distinct_dates = []
         cursor = connection.cursor()
-        cursor.execute(f"SELECT DISTINCT TO_DATE(date, 'DD/MM/YYYY') FROM public.{table_name} ORDER BY TO_DATE(date, 'DD/MM/YYYY') DESC;")
+        cursor.execute(f"SELECT DISTINCT TO_DATE(date, 'DD/MM/YYYY') FROM public.{table_name} WHERE subject = %s ORDER BY TO_DATE(date, 'DD/MM/YYYY') DESC;", [subject])
         for row in cursor.fetchall():
             date_components = str(row[0]).split("-")
             formatted_date = "{}/{}/{}".format(date_components[2], date_components[1], date_components[0])
@@ -296,6 +299,9 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
         class_name_cap = request.query_params.get('class_name')
         division_cap = request.query_params.get('division')
         query_date = request.query_params.get('date')
+        subject = request.query_params.get('subject')
+        
+        subject = str(subject).lower()
       
         if batch_year_cap is None or class_name_cap is None or division_cap is None:
             class_group_instance = class_details.objects.filter(
@@ -325,18 +331,18 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
             query_date = attendance_date
             
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s;", [query_date])
+        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND subject = %s;", [query_date,subject])
         query_result = cursor.fetchall()
         cursor.close()
         
-        students_instance = Student.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap)
+        students_instance = Student.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap,subjects__contains=subject)
         
         attendance_data = []
 
         for row in query_result:
-            id, admission_no, month_year, att_date, status_att = row
-            
-            student = students_instance.filter(admission_no=admission_no).first()
+            id, admission_no, month_year, att_date, status_att, subject_query = row
+            print(subject_query)
+            student = students_instance.filter(admission_no=admission_no,subjects__contains=subject).first()
             if student:
                 attendance_entry = {
                     "admission_no": admission_no,
@@ -380,12 +386,21 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
 class AdminGetIndReportAttendanceMonth(APIView):
     def get(self, request):
         user_id = request.GET.get('user_id')
+        subject = request.GET.get('subject')
         
+
         if user_id is None:
             return Response({'status': 'failure', 'message': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         user_instance = Student.objects.get(id=user_id)
+
+        subjects = str(user_instance.subjects).split(",")
         
+        if subject is None:
+            return Response({'status': 'failure', 'message': 'subject is required'}, status=status.HTTP_400_BAD_REQUEST)
+        elif subject not in subjects:
+            return Response({'status': 'failure', 'message': 'subject does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            
         batch_year = user_instance.batch_year
         class_name = user_instance.class_name
         division = user_instance.division
@@ -410,7 +425,7 @@ class AdminGetIndReportAttendanceMonth(APIView):
 
        
         cursor = connection.cursor()
-        cursor.execute(f"SELECT DISTINCT month_year_number FROM public.{table_name} ORDER BY month_year_number DESC;")
+        cursor.execute(f"SELECT DISTINCT month_year_number FROM public.{table_name} WHERE subject = %s ORDER BY month_year_number DESC;",[subject])
         distinct_dates = [row[0] for row in cursor.fetchall()]
         cursor.close()
    
@@ -425,6 +440,8 @@ class AdminGetIndReportAttendance(APIView):
     def get(self, request):
         user_id = request.GET.get('user_id')
         
+        subject = request.GET.get('subject')
+        
         if user_id is None:
             return Response({'status': 'failure', 'message': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -433,6 +450,13 @@ class AdminGetIndReportAttendance(APIView):
         batch_year = user_instance.batch_year
         class_name = user_instance.class_name
         division = user_instance.division
+        
+        subjects = str(user_instance.subjects).split(",")
+        
+        if subject is None:
+            return Response({'status': 'failure', 'message': 'subject is required'}, status=status.HTTP_400_BAD_REQUEST)
+        elif subject not in subjects:
+            return Response({'status': 'failure', 'message': 'subject does not exist'}, status=status.HTTP_400_BAD_REQUEST)
         
         if batch_year is None or class_name is None or division is None:
             return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -455,15 +479,28 @@ class AdminGetIndReportAttendance(APIView):
         month_year_number = request.GET.get('month_year_number')
     
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s;", [user_instance.admission_no, month_year_number])
+        
+        final_query_result = []
+        
+        
+        cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s AND subject = %s;", [user_instance.admission_no, month_year_number,subject])
         query_result = cursor.fetchall()
+  
         cursor.close()
 
         cursor = connection.cursor()
-        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name} WHERE month_year_number = %s;", [month_year_number])
-        distinct_dates = [row[0] for row in cursor.fetchall()]
-        cursor.close()
         
+        distinct_dates = [] 
+
+        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name} WHERE month_year_number = %s AND subject = %s;", [month_year_number,subject])
+        rows = cursor.fetchall()  # Fetch all rows for the current subject
+        
+        for row in rows:
+            date = row[0]  # Extract the date from the row tuple
+            if date not in distinct_dates:  # Check if the date is not already in the list
+                distinct_dates.append(date)  # Add the date to the list if it's not already present
+                
+        print(distinct_dates)
         # Create an empty dictionary to store attendance information
         attendance_data = {}
 
@@ -474,7 +511,7 @@ class AdminGetIndReportAttendance(APIView):
 
         # Iterate through the query result and build attendance_data
         for row in query_result:
-            id, admission_no, month_year, date, status_att = row
+            id, admission_no, month_year, date, status_att, subject_query = row
             date_obj = date_string_to_object(date)
             attendance_data[date] = status_att
 
@@ -520,6 +557,8 @@ class GetAttendance(APIView):
         # Generate a new access token
         user = Student.objects.get(id=user_id)
         
+        subjects = str(user.subjects).split(",")
+        
         batch_year = user.batch_year
         class_name = user.class_name
         division = user.division
@@ -540,13 +579,30 @@ class GetAttendance(APIView):
         print(user.admission_no)
         month_year_number = request.GET.get('month_year_number')
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s;", [user.admission_no, month_year_number])
-        query_result = cursor.fetchall()
+        
+        final_query_result = []
+        for subject in subjects:
+            cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s AND subject = %s;", [user.admission_no, month_year_number,subject])
+            query_result = cursor.fetchall()
+            
+            final_query_result.append(query_result)
+           
         cursor.close()
 
         cursor = connection.cursor()
-        cursor.execute(f"SELECT DISTINCT date FROM public.{table_name} WHERE month_year_number = %s;", [month_year_number])
-        distinct_dates = [row[0] for row in cursor.fetchall()]
+        
+        distinct_dates = []  # Initialize an empty list to store distinct dates
+
+        for subject in subjects:
+            cursor.execute(f"SELECT DISTINCT date FROM public.{table_name} WHERE subject = %s AND month_year_number = %s;", [subject,month_year_number])
+            rows = cursor.fetchall()  # Fetch all rows for the current subject
+            
+            for row in rows:
+                date = row[0]  # Extract the date from the row tuple
+                if date not in distinct_dates:  # Check if the date is not already in the list
+                    distinct_dates.append(date)  # Add the date to the list if it's not already present
+
+        print(distinct_dates)        
         cursor.close()
         
         # Create an empty dictionary to store attendance information
@@ -558,8 +614,8 @@ class GetAttendance(APIView):
             return {"year": f"{year}", "month": f"{month:02d}", "day": f"{day:02d}"}
 
         # Iterate through the query result and build attendance_data
-        for row in query_result:
-            id, admission_no, month_year, date, status_att = row
+        for row in final_query_result[0]:
+            id, admission_no, month_year, date, status_att, subject_query = row
             date_obj = date_string_to_object(date)
             print(status_att)
             attendance_data[date] = status_att
@@ -610,9 +666,12 @@ class GetAttendanceYearStatus(APIView):
             # Generate a new access token
             user = Student.objects.get(id=user_id)
             
+            print(user)
             batch_year = user.batch_year
             class_name = user.class_name
             division = user.division
+            
+            print(batch_year, class_name, division)
             
             if batch_year is None or class_name is None or division is None:
                 return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -628,18 +687,39 @@ class GetAttendanceYearStatus(APIView):
             division = str(division).replace(" ", "")
             division = str(division).lower()
             
+            subjects = user.subjects.split(",")
+            
+            final_query_result = []
 
             app_name = 'register_student'
             table_name = app_name + '_' + app_name + '_' + batch_year + "_" + class_name + "_" + division + "_attendance"
             
             cursor = connection.cursor()
-            cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s;", [user.admission_no])
-            year_query_result = cursor.fetchall()
+            for subject in subjects:
+                print(subject)
+                cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND subject = %s;", [user.admission_no, subject])
+                year_query_result = cursor.fetchall()
+                
+                if year_query_result != []:
+                    final_query_result.append(year_query_result)
             cursor.close()
             
+            print(final_query_result)
+            
             cursor = connection.cursor()
-            cursor.execute(f"SELECT DISTINCT date FROM public.{table_name}")
-            distinct_dates = [row[0] for row in cursor.fetchall()]
+            
+            distinct_dates = []  # Initialize an empty list to store distinct dates
+
+            for subject in subjects:
+                cursor.execute(f"SELECT DISTINCT date FROM public.{table_name} WHERE subject = %s;", [subject])
+                rows = cursor.fetchall()  # Fetch all rows for the current subject
+                
+                for row in rows:
+                    date = row[0]  # Extract the date from the row tuple
+                    if date not in distinct_dates:  # Check if the date is not already in the list
+                        distinct_dates.append(date)  # Add the date to the list if it's not already present
+
+            print(distinct_dates)        
             cursor.close()
            
             
@@ -651,8 +731,8 @@ class GetAttendanceYearStatus(APIView):
                 return {"year": f"{year}", "month": f"{month:02d}", "day": f"{day:02d}"}
 
             # Iterate through the query result and build attendance_data
-            for row in year_query_result:
-                id, admission_no, month_year, date, status_att = row
+            for row in final_query_result[0]:
+                id, admission_no, month_year, date, status_att, subject_query = row
                 date_obj = date_string_to_object(date)
                 attendance_data[date] = status_att
 
@@ -671,5 +751,6 @@ class GetAttendanceYearStatus(APIView):
             
             return Response(response_data, status=status.HTTP_200_OK)
             
-        except:
-            return Response({'status': 'failure', 'message': 'batch_year, class_name and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(e)
+            return Response({'error':f'error occured {e}'}, status=status.HTTP_400_BAD_REQUEST)

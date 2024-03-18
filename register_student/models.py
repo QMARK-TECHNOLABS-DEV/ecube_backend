@@ -47,6 +47,7 @@ class Attendance(models.Model):
     month_year_number = models.CharField(max_length=20) 
     date = models.CharField(max_length=20) 
     status = models.CharField(max_length=20)
+    subject = models.CharField(max_length=20,default='')
 
 class DailyUpdates(models.Model):
     admission_no = models.CharField(max_length=20)
