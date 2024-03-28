@@ -566,40 +566,42 @@ class ExamResultsView(APIView):
                 ) AS subjects
             """)
             subject_results = cursor.fetchall()
-
+            
             exams_data = []
 
+            # Assuming subject_results is a list of subjects
             for subject in subject_results:
                 subject = subject[0]  # Extract the subject name
+                
                 cursor.execute(f"""
                     SELECT exam_name, marks
                     FROM (
                         SELECT admission_no,
-                               exam_name,
-                               'physics' AS subject,
-                               physics AS marks
+                            exam_name,
+                            'physics' AS subject,
+                            physics AS marks
                         FROM public.{table_name_examresults}
                         UNION ALL
                         SELECT admission_no,
-                               exam_name,
-                               'chemistry' AS subject,
-                               chemistry AS marks
+                            exam_name,
+                            'chemistry' AS subject,
+                            chemistry AS marks
                         FROM public.{table_name_examresults}
                         UNION ALL
                         SELECT admission_no,
-                               exam_name,
-                               'maths' AS subject,
-                               maths AS marks
+                            exam_name,
+                            'maths' AS subject,
+                            maths AS marks
                         FROM public.{table_name_examresults}
                     ) AS subquery
                     WHERE admission_no = '{admission_no}' AND subject = '{subject}'  -- Filter by admission_no and subject
                 """)
                 subject_data = cursor.fetchall()
+                
+                data_for_subject = [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data if marks is not None]
+                if data_for_subject:  # Check if data is not empty
+                    exams_data.append({'subject': subject, 'data': data_for_subject})
 
-                exams_data.append({
-                    'subject': subject,
-                    'data': [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data if marks is not None]
-                })
 
             cursor.close()
 
@@ -665,37 +667,39 @@ class AdminExamResultsView(APIView):
 
             exams_data = []
 
+            # Assuming subject_results is a list of subjects
             for subject in subject_results:
                 subject = subject[0]  # Extract the subject name
+                
                 cursor.execute(f"""
                     SELECT exam_name, marks
                     FROM (
                         SELECT admission_no,
-                               exam_name,
-                               'physics' AS subject,
-                               physics AS marks
+                            exam_name,
+                            'physics' AS subject,
+                            physics AS marks
                         FROM public.{table_name_examresults}
                         UNION ALL
                         SELECT admission_no,
-                               exam_name,
-                               'chemistry' AS subject,
-                               chemistry AS marks
+                            exam_name,
+                            'chemistry' AS subject,
+                            chemistry AS marks
                         FROM public.{table_name_examresults}
                         UNION ALL
                         SELECT admission_no,
-                               exam_name,
-                               'maths' AS subject,
-                               maths AS marks
+                            exam_name,
+                            'maths' AS subject,
+                            maths AS marks
                         FROM public.{table_name_examresults}
                     ) AS subquery
                     WHERE admission_no = '{admission_no}' AND subject = '{subject}'  -- Filter by admission_no and subject
                 """)
                 subject_data = cursor.fetchall()
+                
+                data_for_subject = [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data if marks is not None]
+                if data_for_subject:  # Check if data is not empty
+                    exams_data.append({'subject': subject, 'data': data_for_subject})
 
-                exams_data.append({
-                    'subject': subject,
-                    'data': [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data if marks is not None]
-                })
 
             cursor.close()
 
