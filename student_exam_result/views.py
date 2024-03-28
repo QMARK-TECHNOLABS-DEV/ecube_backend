@@ -81,13 +81,6 @@ class ExamResult(APIView, CustomPageNumberPagination):
 
                 if admission_no is None or exam_name is None:
                     return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if physics is None:
-                    physics = 0
-                if chemistry is None:
-                    chemistry = 0
-                if maths is None:
-                    maths = 0
                     
                 # Insert data into the database for each item in the JSON array
                 cursor = connection.cursor()
@@ -605,7 +598,7 @@ class ExamResultsView(APIView):
 
                 exams_data.append({
                     'subject': subject,
-                    'data': [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data]
+                    'data': [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data if marks is not None]
                 })
 
             cursor.close()
@@ -701,7 +694,7 @@ class AdminExamResultsView(APIView):
 
                 exams_data.append({
                     'subject': subject,
-                    'data': [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data]
+                    'data': [{'exam_name': exam_name, 'marks': marks} for exam_name, marks in subject_data if marks is not None]
                 })
 
             cursor.close()
