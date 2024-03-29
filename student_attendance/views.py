@@ -337,6 +337,7 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
         
         students_instance = Student.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap,subjects__contains=subject)
         
+        print(students_instance)
         attendance_data = []
 
         for row in query_result:
@@ -350,13 +351,13 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
                     "status": status_att
                 }
                 attendance_data.append(attendance_entry)
-            else:
-                attendance_entry = {
-                    "admission_no": admission_no,
-                    "name": "",
-                    "status": "A"
-                }
-                attendance_data.append(attendance_entry)
+            # else:
+            #     attendance_entry = {
+            #         "admission_no": admission_no,
+            #         "name": "",
+            #         "status": "A"
+            #     }
+            #     attendance_data.append(attendance_entry)
 
         for student in students_instance:
             if not any(entry["admission_no"] == student.admission_no for entry in attendance_data):
