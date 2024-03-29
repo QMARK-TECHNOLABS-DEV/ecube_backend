@@ -74,8 +74,11 @@ class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
                 print(e)
                 pass
             
-            leaderboard = self.paginate_queryset(leaderboard, request)
-            
+            try:
+                leaderboard = self.paginate_queryset(leaderboard, request)
+            except Exception as e:
+                return Response({'status': 'failure', 'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
             response = {
                 'class_name': class_name_cap,
                 'batch_year': batch_year_cap,

@@ -295,95 +295,104 @@ class AdminGetAttendanceMonth(APIView):
 class AdminGetAttendance(APIView,CustomPageNumberPagination):
     def get(self, request):
         
-        batch_year_cap = request.query_params.get('batch_year')
-        class_name_cap = request.query_params.get('class_name')
-        division_cap = request.query_params.get('division')
-        query_date = request.query_params.get('date')
-        subject = request.query_params.get('subject')
+        try:
         
-        subject = str(subject).lower()
-      
-        if batch_year_cap is None or class_name_cap is None or division_cap is None:
-            class_group_instance = class_details.objects.filter(
-                    attendance__isnull=False,
-                    attendance_date__isnull=False
-                ).order_by('-attendance').first()
+            batch_year_cap = request.query_params.get('batch_year')
+            class_name_cap = request.query_params.get('class_name')
+            division_cap = request.query_params.get('division')
+            query_date = request.query_params.get('date')
+            subject = request.query_params.get('subject')
             
-            if class_group_instance is None:
-                return Response({"message": "Nothing to show here"}, status=status.HTTP_200_OK)
-            else:
-                batch_year_cap = class_group_instance.batch_year
-                class_name_cap = class_group_instance.class_name
-                division_cap = class_group_instance.division
-                attendance_date = class_group_instance.attendance_date
-
-        batch_year = str(batch_year_cap)
-        class_name = str(class_name_cap).replace(" ", "")
-        class_name = str(class_name).lower()
-        division = str(division_cap).replace(" ", "")
-        division = str(division).lower()
+            subject = str(subject).lower()
         
-
-        app_name = 'register_student_'
-        table_name = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_attendance"
-
-        if not query_date:
-            query_date = attendance_date
-            
-        cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND subject = %s;", [query_date,subject])
-        query_result = cursor.fetchall()
-        cursor.close()
-        
-        students_instance = Student.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap,subjects__contains=subject)
-        
-        print(students_instance)
-        attendance_data = []
-
-        for row in query_result:
-            id, admission_no, month_year, att_date, status_att, subject_query = row
-            print(subject_query)
-            student = students_instance.filter(admission_no=admission_no,subjects__contains=subject).first()
-            if student:
-                attendance_entry = {
-                    "admission_no": admission_no,
-                    "name": student.name,
-                    "status": status_att
-                }
-                attendance_data.append(attendance_entry)
-            # else:
-            #     attendance_entry = {
-            #         "admission_no": admission_no,
-            #         "name": "",
-            #         "status": "A"
-            #     }
-            #     attendance_data.append(attendance_entry)
-
-        for student in students_instance:
-            if not any(entry["admission_no"] == student.admission_no for entry in attendance_data):
-                attendance_entry = {
-                    "admission_no": student.admission_no,
-                    "name": student.name,
-                    "status": "A"
-                }
-                attendance_data.append(attendance_entry)
+            if batch_year_cap is None or class_name_cap is None or division_cap is None:
+                class_group_instance = class_details.objects.filter(
+                        attendance__isnull=False,
+                        attendance_date__isnull=False
+                    ).order_by('-attendance').first()
                 
-        attendance_data = self.paginate_queryset(attendance_data,request)
+                if class_group_instance is None:
+                    return Response({"message": "Nothing to show here"}, status=status.HTTP_200_OK)
+                else:
+                    batch_year_cap = class_group_instance.batch_year
+                    class_name_cap = class_group_instance.class_name
+                    division_cap = class_group_instance.division
+                    attendance_date = class_group_instance.attendance_date
 
-        response_data = {
-            "class_name": class_name_cap,
-            "batch_year": batch_year_cap,
-            "division": division_cap, 
-            "current_date" : query_date,
-            "attendance_result": attendance_data,
-            "total_pages": self.page.paginator.num_pages,
-            "has_next": self.page.has_next(),
-            "has_previous": self.page.has_previous(),
-            "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
-            "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
-            }
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division_cap).replace(" ", "")
+            division = str(division).lower()
+            
 
-        return Response(response_data, status=status.HTTP_200_OK)
+            app_name = 'register_student_'
+            table_name = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_attendance"
+
+            if not query_date:
+                query_date = attendance_date
+                
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND subject = %s;", [query_date,subject])
+            query_result = cursor.fetchall()
+            cursor.close()
+            
+            students_instance = Student.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap,subjects__contains=subject)
+            
+            print(students_instance)
+            attendance_data = []
+
+            for row in query_result:
+                id, admission_no, month_year, att_date, status_att, subject_query = row
+                print(subject_query)
+                student = students_instance.filter(admission_no=admission_no,subjects__contains=subject).first()
+                if student:
+                    attendance_entry = {
+                        "admission_no": admission_no,
+                        "name": student.name,
+                        "status": status_att
+                    }
+                    attendance_data.append(attendance_entry)
+                # else:
+                #     attendance_entry = {
+                #         "admission_no": admission_no,
+                #         "name": "",
+                #         "status": "A"
+                #     }
+                #     attendance_data.append(attendance_entry)
+
+            for student in students_instance:
+                if not any(entry["admission_no"] == student.admission_no for entry in attendance_data):
+                    attendance_entry = {
+                        "admission_no": student.admission_no,
+                        "name": student.name,
+                        "status": "A"
+                    }
+                    attendance_data.append(attendance_entry)
+            
+            try:       
+                attendance_data = self.paginate_queryset(attendance_data,request)
+                
+            except Exception as e:
+                return Response({'status': 'failure', 'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            response_data = {
+                "class_name": class_name_cap,
+                "batch_year": batch_year_cap,
+                "division": division_cap, 
+                "current_date" : query_date,
+                "attendance_result": attendance_data,
+                "total_pages": self.page.paginator.num_pages,
+                "has_next": self.page.has_next(),
+                "has_previous": self.page.has_previous(),
+                "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
+                }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class AdminGetIndReportAttendanceMonth(APIView):
     def get(self, request):
         user_id = request.GET.get('user_id')

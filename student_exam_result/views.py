@@ -383,8 +383,11 @@ class ExamResult(APIView, CustomPageNumberPagination):
                     except Exception as e:
                         print(e)
                         pass
-                    
-            exam_results = self.paginate_queryset(exam_results, request)
+            
+            try: 
+                exam_results = self.paginate_queryset(exam_results, request)
+            except Exception as e:
+                return Response({'status': 'failure', 'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             response = {
                 'class_name': class_name_cap,
