@@ -521,7 +521,10 @@ class StudentBulkMethods(APIView, CustomPageNumberPagination):
   
             students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division).order_by('name')
             
-            students_result = self.paginate_queryset(students, request)
+            try:
+                students_result = self.paginate_queryset(students, request)
+            except Exception as e:
+                return Response({'status': 'failure', 'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             serializer = StudentDisplaySerializer(students_result, many=True)
 
