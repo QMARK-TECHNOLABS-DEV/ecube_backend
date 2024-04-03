@@ -40,11 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
     'corsheaders',
     'rest_framework',
-    
-    
     'apps.register_student',
     'apps.client_auth',
     'apps.student_attendance',
@@ -61,14 +58,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://sapadminportal.online.s3-website-us-east-1.amazonaws.com",
     "https://localhost:3000",
-    "https://localhost:4200",
-  ]
+    "https://localhost:4200",]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
 LOGIN_REDIRECT_URL = 'chat-page'
 
-LOGOUT_REDIRECT_URL = 'login-user'  
+LOGOUT_REDIRECT_URL = 'login-user'
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -84,7 +80,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
-    #'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -134,8 +130,8 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 # Token expiration times in minutes
-ACCESS_TOKEN_EXPIRATION = 120 # Adjust as needed
-REFRESH_TOKEN_EXPIRATION = 403200 # Adjust as needed
+ACCESS_TOKEN_EXPIRATION = 120  # Adjust as needed
+REFRESH_TOKEN_EXPIRATION = 403200  # Adjust as needed
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
