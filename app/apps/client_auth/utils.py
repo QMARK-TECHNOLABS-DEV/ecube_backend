@@ -35,8 +35,8 @@ class TokenUtil:
     def generate_access_token(user):
         payload = {
             'id': user.id,
-            'exp': datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION),
+            'iat': datetime.now(),
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
     
@@ -76,8 +76,8 @@ class TokenUtil:
     def generate_refresh_token(user):
         payload = {
             'id': user.id,
-            'exp': datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION),
+            'iat': datetime.now(),
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
 
@@ -101,7 +101,7 @@ class TokenUtil:
             if token_value:
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
                 exp = payload.get('exp')
-                if datetime.utcnow() > datetime.fromtimestamp(exp):
+                if datetime.now() > datetime.fromtimestamp(exp):
                     return True
                 else:
                     return False
