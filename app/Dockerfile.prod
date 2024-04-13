@@ -4,6 +4,26 @@ RUN pip install --upgrade setuptools
 
 RUN apt-get update && apt-get install -y libpq-dev && apt-get install -y libgl1-mesa-glx && apt-get install -y python3-dev && apt-get install -y gcc && apt-get install -y libglib2.0-0
 
+RUN apt-get update && \
+    apt-get install -y \
+    libxcb-shm0 \
+    libxrandr2 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxi6 \
+    libgtk-3-0 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libatk1.0-0 \
+    libcairo-gobject2 \
+    libcairo2 \
+    libgdk-pixbuf2.0-0 \
+    libasound2 \
+    libxrender1 \
+    libfreetype6 \
+    libfontconfig1 \
+    libdbus-1-3
+    
 # set work directory
 WORKDIR /usr/src/app
 
@@ -53,13 +73,15 @@ COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --upgrade setuptools
 
-# RUN apt-get install -y libpq-dev \
-#     python3-dev \
-#     gcc \
-#     libgl1-mesa-glx \
-#     libglib2.0-0
+RUN apt-get install -y libpq-dev \
+    python3-dev \
+    gcc \
+    libgl1-mesa-glx \
+    libglib2.0-0
+
 RUN pip install psycopg2-binary
 RUN pip install --no-cache /wheels/*
+
 
 # copy entrypoint.prod.sh
 COPY ./entrypoint.prod.sh .
