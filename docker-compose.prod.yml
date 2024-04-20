@@ -5,6 +5,7 @@ services:
     build: 
       context: ./app
       dockerfile: Dockerfile.prod
+    restart: unless-stopped
     command: gunicorn ecube_backend.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/home/app/web/staticfiles
@@ -14,8 +15,10 @@ services:
       - ./.env.prod
     depends_on:
       - db
+
   db:
     image: postgres:15
+    restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
@@ -23,6 +26,7 @@ services:
 
   nginx:
     build: ./nginx
+    restart: unless-stopped
     volumes:
       - static_volume:/home/app/web/staticfiles
     ports:
