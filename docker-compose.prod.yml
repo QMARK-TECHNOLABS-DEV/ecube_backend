@@ -20,7 +20,7 @@ services:
     volumes:
       - static_volume:/home/app/web/staticfiles
     ports:
-      - 80:80
+      - 8000:80
       # Add this line to expose port 443 for SSL
     depends_on:
       - web
