@@ -17,7 +17,6 @@ from .serializers import UserSerializer
 from django.core.mail import send_mail
 from django.contrib import messages
 from django.conf import settings
-import jwt
 from datetime import datetime, timedelta
 from django.http import HttpResponseBadRequest
 
@@ -25,7 +24,7 @@ from django.http import HttpResponseBadRequest
 
 def generate_token(user_id, email):
     # Set the expiration time for the token (e.g., 1 hour from now)
-    expiration_time = datetime.utcnow() + timedelta(minutes=5)
+    expiration_time = datetime.now() + timedelta(minutes=5)
     
     # Create the payload dictionary
     payload = {
