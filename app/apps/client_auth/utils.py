@@ -1,6 +1,6 @@
 # customjwtapp/utils.py
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from .models import Token
 from ..register_student.models import Student
 from django.conf import settings
@@ -35,8 +35,8 @@ class TokenUtil:
     def generate_access_token(user):
         payload = {
             'id': user.id,
-            'exp': datetime.now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION),
-            'iat': datetime.now(),
+            'exp': datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION),
+            'iat': datetime.now(timezone.utc),
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
     
@@ -74,10 +74,11 @@ class TokenUtil:
     
     @staticmethod
     def generate_refresh_token(user):
+        print(datetime.now(timezone.utc))
         payload = {
             'id': user.id,
-            'exp': datetime.now() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION),
-            'iat': datetime.now(),
+            'exp': datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION),
+            'iat': datetime.now(timezone.utc),
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
 
