@@ -412,9 +412,10 @@ class AdminGetDates(APIView):
         try:
             cursor = connection.cursor()
             
-            cursor.execute(f"SELECT DISTINCT date, TO_DATE(date, 'DD/MM/YYYY') AS parsed_date FROM public.{table_name} ORDER BY parsed_date DESC")
-
-            dates = cursor.fetchall()
+            cursor.execute(
+                f"SELECT DISTINCT TO_CHAR(TO_DATE(date, 'DD/MM/YYYY'), 'MM/YYYY') AS month_year FROM public.{table_name}"
+            )
+            month_years = cursor.fetchall()
             
         except Exception as e:
             # Handle exceptions here
@@ -424,7 +425,7 @@ class AdminGetDates(APIView):
         
         dates_list = []
         
-        for date in dates:
+        for date in month_years:
             dates_list.append(date[0])
             
         return Response({'dates': dates_list}, status=status.HTTP_200_OK)
@@ -434,7 +435,7 @@ class AdminGetDates(APIView):
 class AdminGetDailyUpdate(APIView):
     def get(self,request):
         user_id = request.query_params.get('user_id')
-        date = request.query_params.get('date')
+        month_year = request.query_params.get('date')
         
         if not user_id:
             return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -465,9 +466,11 @@ class AdminGetDailyUpdate(APIView):
         print(table_name)
         cursor = connection.cursor()
         
-        if date:
-            cursor.execute(f"SELECT * FROM public.{table_name} WHERE date = %s AND admission_no = %s", [date, user.admission_no])
-            
+        if month_year:
+            cursor.execute(
+                f"SELECT * FROM public.{table_name} WHERE date LIKE %s AND admission_no = %s",
+                [f"%{month_year}", user.admission_no]
+            )
             query_result = cursor.fetchall()
         else:
             cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s", [user.admission_no])
