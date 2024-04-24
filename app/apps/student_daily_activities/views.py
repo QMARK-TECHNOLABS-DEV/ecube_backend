@@ -502,24 +502,12 @@ class AdminGetDailyUpdate(APIView):
                 
                 daily_updates.append(daily_update)
                 
+            message = "Daily updates fetched successfully"
+                
         else:
-            daily_update = {
-                "admission_no": user.admission_no,
-                "date": date,
-                "on_time": False,
-                "voice": False,
-                "nb_sub": False,
-                "mob_net": False,
-                "camera": False,
-                "full_class": False,
-                "activities": 0,
-                "engagement": False,
-                "overall_performance_percentage": 0,
-                "overall_performance": "POOR",
-                "remarks": ""
-            }
             
-            daily_updates.append(daily_update)
             
-        return Response({'daily_updates': daily_updates}, status=status.HTTP_200_OK)
+            message = "No daily updates found"
+            
+        return Response({'daily_updates': daily_updates,'message': message}, status=status.HTTP_200_OK)
     
