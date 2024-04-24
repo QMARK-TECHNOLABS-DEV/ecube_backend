@@ -339,12 +339,10 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
             
             students_instance = Student.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap,subjects__contains=subject)
             
-            print(students_instance)
             attendance_data = []
 
             for row in query_result:
                 id, admission_no, month_year, att_date, status_att, subject_query = row
-                print(subject_query)
                 student = students_instance.filter(admission_no=admission_no,subjects__contains=subject).first()
                 if student:
                     attendance_entry = {
@@ -490,12 +488,13 @@ class AdminGetIndReportAttendance(APIView):
     
         cursor = connection.cursor()
         
-        final_query_result = []
-        
+        print(user_instance.admission_no)
+        print(month_year_number)
         
         cursor.execute(f"SELECT * FROM public.{table_name} WHERE admission_no = %s AND month_year_number = %s AND subject = %s;", [user_instance.admission_no, month_year_number,subject])
         query_result = cursor.fetchall()
-  
+        
+        print(query_result)
         cursor.close()
 
         cursor = connection.cursor()
@@ -598,7 +597,7 @@ class GetAttendance(APIView):
             final_query_result.append(query_result)
            
         cursor.close()
-
+       
         cursor = connection.cursor()
         
         distinct_dates = []  # Initialize an empty list to store distinct dates
@@ -622,16 +621,23 @@ class GetAttendance(APIView):
         def date_string_to_object(date_string):
             day, month, year = map(int, date_string.split('/'))
             return {"year": f"{year}", "month": f"{month:02d}", "day": f"{day:02d}"}
+        
+        filtered_data = [item for item in final_query_result if item]
+        
+        print(filtered_data)
+        
 
-        # Iterate through the query result and build attendance_data
-        for row in final_query_result[0]:
-            id, admission_no, month_year, date, status_att, subject_query = row
-            date_obj = date_string_to_object(date)
-            print(status_att)
-            attendance_data[date] = status_att
+        for sublist in filtered_data:
+            for row in sublist:
+                id, admission_no, month_year, date, status_att, subject_query = row
+                date_obj = date_string_to_object(date)
+                attendance_data[date] = status_att
 
+            
+        print(attendance_data)
         # Iterate through distinct_dates and mark absent if date is missing in attendance_data
         for date in distinct_dates:
+            
             if date not in attendance_data:
                 attendance_data[date] = "A"
                 
@@ -740,11 +746,16 @@ class GetAttendanceYearStatus(APIView):
                 day, month, year = map(int, date_string.split('/'))
                 return {"year": f"{year}", "month": f"{month:02d}", "day": f"{day:02d}"}
 
-            # Iterate through the query result and build attendance_data
-            for row in final_query_result[0]:
-                id, admission_no, month_year, date, status_att, subject_query = row
-                date_obj = date_string_to_object(date)
-                attendance_data[date] = status_att
+            filtered_data = [item for item in final_query_result if item]
+            
+            print(filtered_data)
+            
+
+            for sublist in filtered_data:
+                for row in sublist:
+                    id, admission_no, month_year, date, status_att, subject_query = row
+                    date_obj = date_string_to_object(date)
+                    attendance_data[date] = status_att
 
             # Iterate through distinct_dates and mark absent if date is missing in attendance_data
             for date in distinct_dates:

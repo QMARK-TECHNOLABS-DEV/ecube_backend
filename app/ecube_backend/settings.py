@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from datetime import timedelta
 # Load environment variables from .env file
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -130,8 +131,8 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 # Token expiration times in minutes
-ACCESS_TOKEN_EXPIRATION = 120  # Adjust as needed
-REFRESH_TOKEN_EXPIRATION = 403200  # Adjust as needed
+ACCESS_TOKEN_EXPIRATION = 2
+REFRESH_TOKEN_EXPIRATION = 48
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
