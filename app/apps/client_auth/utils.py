@@ -131,7 +131,7 @@ class TokenUtil:
     @staticmethod
     def decode_token(token):
         try:
-            print("decode", settings.SECRET_KEY)
+            
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             return payload
         except jwt.ExpiredSignatureError as e:

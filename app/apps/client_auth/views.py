@@ -272,13 +272,13 @@ class ValidateRefreshTokenView(APIView):
 
             token_key = Token.objects.filter(refresh_token=token).first()
             
-            print("Reached here", token_key.refresh_token)
+           
             if not token_key:
                 return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
             payload = TokenUtil.is_refresh_token_expired(token_key.refresh_token)
             
-            print(payload)
+          
             # Optionally, you can extract user information or other claims from the payload
             if payload:
                 return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
@@ -303,13 +303,13 @@ class ValidateTokenView(APIView):
 
             token_key = Token.objects.filter(access_token=token).first()
             
-            print("Reached here", token_key.access_token)
+            
             if not token_key:
                 return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
             payload = TokenUtil.is_token_expired(token_key.access_token)
             
-            print(payload)
+
             # Optionally, you can extract user information or other claims from the payload
             if payload:
                 return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
