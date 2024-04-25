@@ -256,7 +256,29 @@ class StudentMethods(APIView):
       
         return Response({'Message': 'Record does not exist'},status=status.HTTP_400_BAD_REQUEST)
     
-
+class ClassCreatTables(APIView):
+    def post(self, request):
+        try:
+            data = request.data
+            
+            # Convert data values to uppercase
+            for key in data:
+                if isinstance(data[key], str):
+                    data[key] = data[key].upper()
+            
+            
+                    
+            table_name = f"{data['batch_year']}_{data['class_name']}_{data['division']}".replace(" ","").lower()
+             
+            app_name = 'register_student_'
+            
+            print(table_name)
+            create_tables(app_name,table_name)
+            
+            return Response({'message': 'Table created successfully'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({'message': 'Internal failure'}, status=status.HTTP_400_BAD_REQUEST)
 class ClassMethods(APIView):
     def post(self, request):
         try:
@@ -291,6 +313,8 @@ class ClassMethods(APIView):
                 return Response({"message": "Serializer not valid"},status=status.HTTP_400_BAD_REQUEST)
         except:
             return Response({"message": "Internal failure"},status=status.HTTP_400_BAD_REQUEST)
+        
+    
         
         
     def put(self, request):

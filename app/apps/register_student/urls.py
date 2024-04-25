@@ -18,4 +18,6 @@ urlpatterns = [
     path('set/restricted/', views.StudentSoftDelete.as_view(), name='set-restricted'),
     path('get/next/admission-no/', views.NextAdmNumber.as_view(), name='get-next-admission-no'), 
    #  path('student/backup/post/', views.AddStudentDataBackup.as_view(), name='student-backup-post'),
+   
+    path('class/methods/tables/create', views.ClassCreatTables.as_view(), name='class-methods-tables-create'),
 ]

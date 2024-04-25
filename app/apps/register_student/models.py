@@ -71,32 +71,39 @@ class DailyUpdates(models.Model):
     
     
 def create_dynamic_models(model_names):
-    base_models = [ExamResults, LeaderBoard, Attendance, DailyUpdates]
+    try:
+        base_models = [ExamResults, LeaderBoard, Attendance, DailyUpdates]
 
-    for base_model, new_model_name in zip(base_models, model_names):
-        # Check if the new model name is a valid identifier
-        if not new_model_name.isidentifier():
-            print(f"Invalid model name: {new_model_name}")
-            continue
+        for base_model, new_model_name in zip(base_models, model_names):
+            # Check if the new model name is a valid identifier
+            if not new_model_name.isidentifier():
+                print(f"Invalid model name: {new_model_name}")
+                continue
+            
+            print(base_model)
+            app_label = base_model._meta.app_label
+            
+            print(app_label)
+            # Create a dictionary of field names and their corresponding field objects
+            fields = {
+                field.name: field.clone() for field in base_model._meta.fields
+            }
 
-        app_label = base_model._meta.app_label
+            fields['__module__'] = 'apps.register_student.models'
 
-        # Create a dictionary of field names and their corresponding field objects
-        fields = {
-            field.name: field.clone() for field in base_model._meta.fields
-        }
+            # Create the dynamic model class
+            dynamic_model = type(new_model_name, (models.Model,), fields)
 
-        fields['__module__'] = app_label
-
-        # Create the dynamic model class
-        dynamic_model = type(new_model_name, (models.Model,), fields)
-
-        # Create the database table for the dynamic model
-        with connection.schema_editor() as schema_editor:
-            schema_editor.create_model(dynamic_model)
+            # Create the database table for the dynamic model
+            with connection.schema_editor() as schema_editor:
+                schema_editor.create_model(dynamic_model)
+    except Exception as e:
+        print(e)
+        
 
 
 def create_tables(app_name,unique_table_names):
-    model_names = [app_name + unique_table_names+'_examResults', app_name+unique_table_names+'_leaderBoard', app_name+unique_table_names+'_attendance',app_name + unique_table_names+'_dailyUpdates']
+    print(app_name)
+    model_names = [app_name + unique_table_names+'_examresults', app_name+unique_table_names+'_leaderboard', app_name+unique_table_names+'_attendance',app_name + unique_table_names+'_dailyupdates']
     create_dynamic_models(model_names)
     

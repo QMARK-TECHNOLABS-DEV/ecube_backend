@@ -17,7 +17,7 @@ from datetime import timedelta
 # Load environment variables from .env file
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    
     'apps.register_student',
+    
     'apps.client_auth',
     'apps.student_attendance',
     'apps.student_exam_result',

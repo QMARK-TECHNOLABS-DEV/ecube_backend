@@ -337,6 +337,22 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
             query_result = cursor.fetchall()
             cursor.close()
             
+            if query_result == []:
+                response_data = {
+                    "class_name": class_name_cap,
+                    "batch_year": batch_year_cap,
+                    "division": division_cap, 
+                    "current_date" : query_date,
+                    "attendance_result": query_result,
+                    "total_pages": 0,
+                    "has_next": False,
+                    "has_previous": False,
+                    "next_page_number": None,
+                    "previous_page_number": None,
+                }
+
+                return Response(response_data, status=status.HTTP_200_OK)
+            
             students_instance = Student.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap,subjects__contains=subject)
             
             attendance_data = []
