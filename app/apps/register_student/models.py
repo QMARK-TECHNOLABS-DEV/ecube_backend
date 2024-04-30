@@ -38,9 +38,9 @@ class ExamResults(models.Model):
     
 class LeaderBoard(models.Model):    
     admission_no = models.CharField(max_length=20)  
-    physics = models.IntegerField(null=True, blank=True)
-    chemistry = models.IntegerField(null=True, blank=True)
-    maths = models.IntegerField(null=True, blank=True)
+    physics = models.DecimalField(null=True, blank=True,decimal_places=2,max_digits=5)
+    chemistry = models.DecimalField(null=True, blank=True,decimal_places=2,max_digits=5)
+    maths = models.DecimalField(null=True, blank=True,decimal_places=2,max_digits=5)
     
 class Attendance(models.Model):
     admission_no = models.CharField(max_length=20)
