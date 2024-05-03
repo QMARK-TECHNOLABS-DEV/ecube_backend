@@ -5,8 +5,12 @@ from django.db import connection
 from ..register_student.models import Student, class_details
 from ..client_auth.utils import TokenUtil
 from ..client_auth.models import Token
+from ecube_backend.pagination import CustomPageNumberPagination
 import pandas as pd
 import requests, json
+from datetime import datetime
+from django.utils import timezone
+
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
     url = "https://fcm.googleapis.com/fcm/send"
@@ -66,6 +70,7 @@ class AddDailyUpdatesBulk(APIView):
         batch_year = request.GET.get('batch_year')
         class_name = request.GET.get('class_name')
         division = request.GET.get('division')
+        date_variable = request.GET.get('date')
         
         batch_year_notif = batch_year
         class_name_notif = class_name
@@ -102,8 +107,9 @@ class AddDailyUpdatesBulk(APIView):
             "N": "Student have not answered in the QnA session"
         }
         # Extract the date from the first cell in the Excel sheet
-        raw_date = df.columns[0]
-        date_variable = split_date(raw_date)
+        # raw_date = df.columns[0]
+        # date_variable = split_date(raw_date)
+        admission_nos = []
         
         max_count_of_y = -1
         # Iterate through rows (excluding the header) and count "Y" values
@@ -126,18 +132,20 @@ class AddDailyUpdatesBulk(APIView):
                 if student_instance:  
                     print("admission no ")
                     
+                    admission_nos.append(str(adm_no))
+                    
                     student_data = {
                         "admission_no": adm_no,
                         "date": date_variable,
                         "on_time": True,
-                        "voice": False if str(row[2]).upper().strip() == "M" else True,
-                        "nb_sub": False if str(row[2]).upper().strip() == "B" else True,
-                        "mob_net": False if str(row[2]).upper().strip() == "R" else True,
-                        "camera": False if str(row[2]).upper().strip() == "V" else True,
+                        "voice": False if str(row.iloc[2]).upper().strip() == "M" else True,
+                        "nb_sub": False if str(row.iloc[2]).upper().strip() == "B" else True,
+                        "mob_net": False if str(row.iloc[2]).upper().strip() == "R" else True,
+                        "camera": False if str(row.iloc[2]).upper().strip() == "V" else True,
                         "full_class": True,
                         "activities": sum(1 for val in row[3:] if val == "Y"),
-                        "engagement": False if str(row[2]).upper().strip() == "L" else True,
-                        "remarks": activity_code[str(row[2]).upper().strip()] if str(row[2]).upper().strip() in ["O", "N"] else ""     
+                        "engagement": False if str(row.iloc[2]).upper().strip() == "L" else True,
+                        "remarks": activity_code[str(row.iloc[2]).upper().strip()] if str(row.iloc[2]).upper().strip() in ["O", "N"] else ""   
                     }
                     
                     
@@ -198,18 +206,27 @@ class AddDailyUpdatesBulk(APIView):
                 ))
                                                 
             cursor.close()
-            student_list = Student.objects.filter(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif).values('device_id')
+            student_list = Student.objects.filter(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif).values('device_id', 'admission_no')
             
             if student_list:
-                device_ids = [student['device_id'] for student in student_list]
+                device_ids = [student['device_id'] for student in student_list if student['admission_no'] in admission_nos]
 
                 print(device_ids)
                 
-                message_title = "Daily Class Updates have been published"
-                message_desc = "Check your daily class updates for your performance score"
-                message_type = "dailyClass"
+                if device_ids:
+                    message_title = "Daily Class Updates"
+                    message_desc = f"Check your daily class update on {date_variable}."
+                    message_type = "dailyClass"
+                    
+                    send_notification_main(device_ids,message_title, message_desc, message_type)
                 
-                send_notification_main(device_ids,message_title, message_desc, message_type)
+            class_group_instance = class_details.objects.get(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif)
+            
+            class_group_instance.daily_class = timezone.now()
+            
+            class_group_instance.daily_class_date = date_variable
+            
+            class_group_instance.save()
                 
             return Response({'message': 'Data saved successfully'}, status=status.HTTP_200_OK)
         except Exception as e:
@@ -430,7 +447,96 @@ class AdminGetDates(APIView):
             
         return Response({'dates': dates_list}, status=status.HTTP_200_OK)
     
+class AdminDailyUpdateViewHome(APIView, CustomPageNumberPagination):
+    def get(self, request):
+        try:
+            batch_year_cap = request.query_params.get('batch_year')
+            class_name_cap = request.query_params.get('class_name')
+            division_cap = request.query_params.get('division')
+            date = request.query_params.get('date')
+            
+            if batch_year_cap is None or class_name_cap is None or division_cap is None:
+                class_group_instance = class_details.objects.filter(
+                        daily_class__isnull=False,
+                        daily_class_date__isnull=False
+                    ).order_by('-daily_class').first()
+                
+                if class_group_instance is None:
+                    return Response({"message": "Nothing to show here"}, status=status.HTTP_200_OK)
+                else:
+                    batch_year_cap = class_group_instance.batch_year
+                    class_name_cap = class_group_instance.class_name
+                    division_cap = class_group_instance.division
+                    date_cap = class_group_instance.daily_class_date
+                    
+                    
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division_cap).replace(" ", "")
+            division = str(division).lower()
+            
+            
+            app_name = 'register_student_'
+            
+            table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_dailyupdates"
+            
+            if not date:
+                date = date_cap
+                
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE date = %s", [date])
+            query_results = cursor.fetchall()
+        
+            cursor.close()
+            
+            daily_class_results = []
+            if query_results:
+                for result in query_results:
+                    
+                    try:
+                        student_instance = Student.objects.get(admission_no=result[1])
+                        print("inside the loop")
+                        daily_class_results.append({
+                            "admission_no": result[1],
+                            "name": student_instance.name,
+                            "date": result[2],
+                            "on_time": result[3],
+                            "voice": result[4],
+                            "nb_sub": result[5],
+                            "mob_net": result[6],
+                            "camera": result[7],
+                            "full_class": result[8],
+                            "activities": result[9],
+                            "engagement": result[10],
+                            "overall_performance_percentage": result[11],
+                            "overall_performance": result[12],
+                            "remarks": result[13]
+                        })
+                    except Exception as e:
+                        print(e)
+                        pass
+            
+            try: 
+                daily_class_results = self.paginate_queryset(daily_class_results, request)
+            except Exception as e:
+                return Response({'status': 'failure', 'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            response = {
+                'class_name': class_name_cap,
+                'batch_year': batch_year_cap,
+                'division': division_cap, 
+                'result_data': daily_class_results,
+                "total_pages": self.page.paginator.num_pages,
+                "has_next": self.page.has_next(),
+                "has_previous": self.page.has_previous(),
+                "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
+            }
+            return Response(response, status=status.HTTP_200_OK)
     
+        except Exception as e:
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
 class AdminGetDailyUpdate(APIView):
     def get(self,request):

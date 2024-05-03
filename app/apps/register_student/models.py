@@ -12,6 +12,8 @@ class class_details(models.Model):
     exam_name = models.TextField(blank=True,null=True)
     attendance = models.DateTimeField(null=True,blank=True)
     attendance_date = models.TextField(blank=True,null=True)
+    daily_class = models.DateTimeField(null=True,blank=True)
+    daily_class_date = models.TextField(blank=True,null=True)
 
 class Student(models.Model):
 

@@ -7,4 +7,5 @@ urlpatterns = [
     path('get/daily-activities/', views.GetDailyUpdate.as_view(), name='get-daily-activities'),
     path('admin/get/dates/daily-activities/', views.AdminGetDates.as_view(), name='admin-get-daily-activities'),
     path('admin/get/daily-activities/', views.AdminGetDailyUpdate.as_view(), name='admin-get-daily-activities'),
+    path('admin/get/all/',views.AdminDailyUpdateViewHome.as_view(), name='admin-get-all-daily-activities'),
 ]
