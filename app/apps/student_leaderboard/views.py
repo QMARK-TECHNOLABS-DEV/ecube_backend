@@ -52,12 +52,6 @@ class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
         subject = request.GET.get('subject')
         exam_name = request.GET.get('exam_name')
         
-        batch_year = str(batch_year_cap)
-        class_name = str(class_name_cap).replace(" ", "")
-        class_name = str(class_name).lower()
-        division = str(division_cap).replace(" ", "")
-        division = str(division).lower()
-        
         if not exam_name:
             if batch_year_cap is None or class_name_cap is None or division_cap is None:
                     class_group_instance = class_details.objects.filter(
@@ -79,7 +73,13 @@ class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
                 else:
                     if not class_group.exam_result:
                         return Response({"message": "No exam results published for this class group"}, status=status.HTTP_400_BAD_REQUEST)
-         
+                    
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division_cap).replace(" ", "")
+            division = str(division).lower()
+            
             if subject is None:
                 subject = "PHYSICS" 
             else:
