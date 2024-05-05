@@ -72,6 +72,13 @@ class ExamResult(APIView, CustomPageNumberPagination):
             table_name_examresults = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_examresults"
             table_name_leaderboard = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
 
+            if data[0].get('physics'):
+                subject = "physics"
+            elif data[0].get('chemistry'):
+                subject = "chemistry"
+            elif data[0].get('maths'):
+                subject = "maths"
+                
             for item in data:
                 admission_no = item.get('admission_no')
                 exam_name = item.get('exam_name')
@@ -81,7 +88,8 @@ class ExamResult(APIView, CustomPageNumberPagination):
 
                 if admission_no is None or exam_name is None:
                     return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
-                    
+                
+
                 # Insert data into the database for each item in the JSON array
                 cursor = connection.cursor()
                 cursor.execute(f"SELECT * FROM public.{table_name_examresults} WHERE admission_no = %s AND exam_name = %s", [admission_no, exam_name])
@@ -137,6 +145,8 @@ class ExamResult(APIView, CustomPageNumberPagination):
             
             class_group_instance.exam_name = exam_name
             
+            class_group_instance.exam_subject = subject
+            
             class_group_instance.save()
             
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
@@ -162,6 +172,13 @@ class ExamResult(APIView, CustomPageNumberPagination):
             
             data = request.data  # Get the JSON array from the request body
             
+            if data[0].get('physics'):
+                subject = "physics"
+            elif data[0].get('chemistry'):
+                subject = "chemistry"
+            elif data[0].get('maths'):
+                subject = "maths"
+                
             if not isinstance(data, list):
                 return Response({'status': 'failure', 'message': 'Request body should be a JSON array'}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -224,6 +241,8 @@ class ExamResult(APIView, CustomPageNumberPagination):
             class_group_instance.exam_result = datetime.now()
             
             class_group_instance.exam_name = exam_name
+            
+            class_group_instance.exam_subject = subject
             
             class_group_instance.save()
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
@@ -312,6 +331,8 @@ class ExamResult(APIView, CustomPageNumberPagination):
             class_group_instance.exam_result = None
             
             class_group_instance.exam_name = None
+            
+            class_group_instance.exam_subject = None
             
             class_group_instance.save()
             return Response({'status': 'success'}, status=status.HTTP_200_OK)

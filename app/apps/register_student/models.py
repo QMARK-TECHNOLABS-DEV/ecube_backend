@@ -10,6 +10,7 @@ class class_details(models.Model):
     batch_year = models.TextField(null=False, blank=False,default=0)
     exam_result = models.DateTimeField(null=True,blank=True)
     exam_name = models.TextField(blank=True,null=True)
+    exam_subject = models.TextField(blank=True,null=True)
     attendance = models.DateTimeField(null=True,blank=True)
     attendance_date = models.TextField(blank=True,null=True)
     daily_class = models.DateTimeField(null=True,blank=True)

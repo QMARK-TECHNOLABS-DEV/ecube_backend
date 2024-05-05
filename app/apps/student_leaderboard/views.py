@@ -7,6 +7,42 @@ from ..client_auth.utils import TokenUtil
 from ..client_auth.models import Token
 from ..register_student.models import class_details
 from ecube_backend.pagination import CustomPageNumberPagination
+
+class AdminGetExams(APIView):
+    def get(self,request):
+        try:
+            batch_year = request.GET.get('batch_year')
+            class_name = request.GET.get('class_name')
+            division = request.GET.get('division')
+
+            if batch_year is None or class_name is None or division is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            batch_year = str(batch_year)
+            class_name = str(class_name).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division).replace(" ", "")
+            division = str(division).lower()
+
+            app_name = 'register_student'
+            table_name = app_name + '_' + app_name+ '_'+ batch_year + "_" + class_name + "_" + division + "_examresults"
+            
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT DISTINCT exam_name FROM public.{table_name} ORDER BY exam_name ASC;")
+            
+            query_results = cursor.fetchall()
+            
+            cursor.close()
+            
+            exams = []
+            
+            for row in query_results:
+                exams.append(row[0])
+                
+            return Response({'exams': exams}, status=status.HTTP_200_OK) 
+        except Exception as e:
+            print(e)
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
     def get(self, request):
         
@@ -14,47 +50,61 @@ class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
         class_name_cap = request.GET.get('class_name')
         division_cap = request.GET.get('division')
         subject = request.GET.get('subject')
+        exam_name = request.GET.get('exam_name')
         
-        
-
-        if batch_year_cap is None or class_name_cap is None or division_cap is None:
-                class_group_instance = class_details.objects.filter(
-                        exam_result__isnull=False 
-                    ).order_by('-exam_result').first()
-                
-                if class_group_instance is None:
-                    return Response({"message": "Nothing to show here"}, status=status.HTTP_200_OK)
-                else:
-                    batch_year_cap = class_group_instance.batch_year
-                    class_name_cap = class_group_instance.class_name
-                    division_cap = class_group_instance.division
-        else:
-            class_group = class_details.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap).first()
-            
-            if not class_group:
-                return Response({"message": "Class Group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                if not class_group.exam_result:
-                    return Response({"message": "No exam results published for this class group"}, status=status.HTTP_400_BAD_REQUEST)
-         
-        if subject is None:
-            subject = "PHYSICS" 
-        else:
-            subject = str(subject).upper()      
-                    
         batch_year = str(batch_year_cap)
         class_name = str(class_name_cap).replace(" ", "")
         class_name = str(class_name).lower()
         division = str(division_cap).replace(" ", "")
         division = str(division).lower()
+        
+        if not exam_name:
+            if batch_year_cap is None or class_name_cap is None or division_cap is None:
+                    class_group_instance = class_details.objects.filter(
+                            exam_result__isnull=False 
+                        ).order_by('-exam_result').first()
+                    
+                    if class_group_instance is None: 
+                        return Response({"message": "Nothing to show here"}, status=status.HTTP_200_OK)
+                    else:
+                        batch_year_cap = class_group_instance.batch_year
+                        class_name_cap = class_group_instance.class_name
+                        division_cap = class_group_instance.division
+                        subject = class_group_instance.exam_subject
+            else:
+                class_group = class_details.objects.filter(batch_year=batch_year_cap,class_name=class_name_cap,division=division_cap).first()
+                
+                if not class_group:
+                    return Response({"message": "Class Group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    if not class_group.exam_result:
+                        return Response({"message": "No exam results published for this class group"}, status=status.HTTP_400_BAD_REQUEST)
+         
+            if subject is None:
+                subject = "PHYSICS" 
+            else:
+                subject = str(subject).upper()      
+                    
 
-        app_name = 'register_student_'
-        table_name = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
+            app_name = 'register_student_'
+            table_name = app_name + app_name + batch_year + "_" + class_name + "_" + division + "_leaderboard"
 
-        cursor = connection.cursor()
-        cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} WHERE admission_no IS NOT NULL AND {subject} IS NOT NULL ORDER BY {subject} DESC NULLS LAST LIMIT 10;")
-        query_results = cursor.fetchall()
-        cursor.close()
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} WHERE admission_no IS NOT NULL AND {subject} IS NOT NULL ORDER BY {subject} DESC NULLS LAST;")
+            query_results = cursor.fetchall()
+            cursor.close()
+            
+        else:
+            app_name = 'register_student'
+            table_name = app_name + '_' + app_name + '_'+ batch_year + "_" + class_name + "_" + division + "_examresults"
+            
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT admission_no, {subject} FROM public.{table_name} WHERE exam_name = %s AND {subject} IS NOT NULL ORDER BY {subject} DESC NULLS LAST;", [exam_name])
+            
+            query_results = cursor.fetchall()
+            
+            print(query_results)
+            cursor.close()
         
         leaderboard = []
         
@@ -74,23 +124,23 @@ class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
                 print(e)
                 pass
             
-            try:
-                leaderboard = self.paginate_queryset(leaderboard, request)
-            except Exception as e:
-                return Response({'status': 'failure', 'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            leaderboard = self.paginate_queryset(leaderboard, request)
+        except Exception as e:
+            return Response({'status': 'failure', 'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                     
-            response = {
-                'class_name': class_name_cap,
-                'batch_year': batch_year_cap,
-                'division': division_cap, 
-                'subject': subject,
-                'leaderboard': leaderboard,
-                "total_pages": self.page.paginator.num_pages,
-                "has_next": self.page.has_next(),
-                "has_previous": self.page.has_previous(),
-                "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
-                "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
-            }
+        response = {
+            'class_name': class_name_cap,
+            'batch_year': batch_year_cap,
+            'division': division_cap, 
+            'subject': subject,
+            'leaderboard': leaderboard,
+            "total_pages": self.page.paginator.num_pages,
+            "has_next": self.page.has_next(),
+            "has_previous": self.page.has_previous(),
+            "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+            "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
+        }
         return Response(response, status=status.HTTP_200_OK)
     
 class GetLeaderBoard(APIView):
