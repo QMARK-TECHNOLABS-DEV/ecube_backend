@@ -95,6 +95,17 @@ class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
             cursor.close()
             
         else:
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "")
+            class_name = str(class_name).lower()
+            division = str(division_cap).replace(" ", "")
+            division = str(division).lower()
+            
+            if subject is None:
+                subject = "PHYSICS" 
+            else:
+                subject = str(subject).upper()
+                
             app_name = 'register_student'
             table_name = app_name + '_' + app_name + '_'+ batch_year + "_" + class_name + "_" + division + "_examresults"
             
