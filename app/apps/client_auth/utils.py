@@ -21,7 +21,7 @@ class TokenUtil:
     @staticmethod  
     def generate_access_token(user):
         try:
-            expiration_time = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION)
+            expiration_time = datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_EXPIRATION)
             payload = {
                 'id': user.id,
                 'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
