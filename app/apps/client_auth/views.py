@@ -15,7 +15,7 @@ import random
 import jwt, json
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-
+from django.db import connection
 class SendOTPPhone(APIView):
     def post(self, request):
         try:
@@ -269,28 +269,27 @@ class ValidateRefreshTokenView(APIView):
 
         try:
             _, token = authorization_header.split()
-
+            
             token_key = Token.objects.filter(refresh_token=token).first()
             
-           
             if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-            payload = TokenUtil.is_refresh_token_expired(token_key.refresh_token)
+                return Response({"error": "Refresh token not found"}, status=status.HTTP_401_UNAUTHORIZED)
             
-          
+
+            payload = TokenUtil.is_refresh_token_expired(token=token)
+            
+
             # Optionally, you can extract user information or other claims from the payload
             if payload:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({"error": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
 
             # Implement additional authorization logic here if needed
 
-        except (ValueError, Token.DoesNotExist):
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
+            return Response({"error": "Invalid or expired access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Access token is valid; you can proceed with request processing
-        return Response({"message": "Access token is valid."}, status=status.HTTP_200_OK)
-         
+        return Response({"message": "Refresh token is valid.", "refresh_token": token}, status=status.HTTP_200_OK)
 class ValidateTokenView(APIView):
     def post(self, request):
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
@@ -300,12 +299,12 @@ class ValidateTokenView(APIView):
 
         try:
             _, token = authorization_header.split()
-
-            token_key = Token.objects.filter(access_token=token).first()
             
+            token_key = Token.objects.filter(access_token=token).first()
             
             if not token_key:
                 return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+            
 
             payload = TokenUtil.is_token_expired(token_key.access_token)
             
@@ -316,57 +315,142 @@ class ValidateTokenView(APIView):
 
             # Implement additional authorization logic here if needed
 
-        except (ValueError, Token.DoesNotExist):
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
+            return Response({"error": "Invalid or expired access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Access token is valid; you can proceed with request processing
-        return Response({"message": "Access token is valid."}, status=status.HTTP_200_OK)
-    
+        return Response({"message": "Access token is valid.", "access_token": token_key.access_token}, status=status.HTTP_200_OK)
+
+class RequestAccessTokenWeb(APIView):
+    def post(self, request):
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Tokens is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            _ , access_token = authorization_header.split()
+            
+            print(access_token)
+            
+            token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+
+            payload = TokenUtil.is_token_expired(token_key.access_token)
+            
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"message": "Access token is valid.", "access_token": token_key.access_token}, status=status.HTTP_200_OK)
+            else:
+                
+                refresh_token = request.data.get('refresh_token')
+ 
+                token_key = Token.objects.filter(refresh_token=refresh_token).first()
+                
+                print(token_key)
+                if not token_key:
+                    return Response({"error": "Refresh token not found."}, status=status.HTTP_401_UNAUTHORIZED)
+                
+                refresh_token_valid = TokenUtil.is_refresh_token_expired(token_key.refresh_token)
+                
+                if refresh_token_valid:
+                    return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+                # Validate the refresh token
+                refresh_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+                
+                if not refresh_token_payload:
+                    return Response({'error': 'Unable to decode refresh code'}, status=status.HTTP_401_UNAUTHORIZED)
+
+                # Check if the refresh token is associated with a user (add your logic here)
+                user_id = refresh_token_payload.get('id')
+                
+                if not user_id:
+                    return Response({'error': 'The id key not found in token for the user.'}, status=status.HTTP_404_NOT_FOUND)
+
+                # Generate a new access token
+                user = Student.objects.get(id=user_id)
+                
+                access_token = TokenUtil.generate_access_token(user)
+                
+                if TokenUtil.validate_access_token(access_token):
+                    return Response({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:
+                    
+                    user_token = Token.objects.get(refresh_token=refresh_token)
+                    user_token.access_token = access_token
+                    user_token.save()
+                    
+                    return Response({'access_token': access_token, 'message': 'new access token'}, status=status.HTTP_200_OK)
+            
+        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
+            print("error")
+            return Response({"error": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        except Exception as e:
+            print(e)
+            
+            return Response({'error': f'{e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 class RequestAccessToken(APIView):
     def post(self, request):
-        authorization_header = request.META.get("HTTP_AUTHORIZATION")
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
-        if not authorization_header:
-            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        _, refresh_token = authorization_header.split()
-        
-        token_key = Token.objects.filter(refresh_token=refresh_token).first()
-        
-        if not token_key:
-            return Response({"error": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        refresh_token_valid = TokenUtil.is_refresh_token_expired(token_key.refresh_token)
-        
-        if refresh_token_valid:
-            return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
-        # Validate the refresh token
-        refresh_token_payload = TokenUtil.decode_token(token_key.refresh_token)
-        
-        if not refresh_token_payload:
-            return Response({'error': 'Unable to decode refresh code'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # Check if the refresh token is associated with a user (add your logic here)
-        user_id = refresh_token_payload.get('id')
-        
-        if not user_id:
-            return Response({'error': 'The id key not found in token for the user.'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Generate a new access token
-        user = Student.objects.get(id=user_id)
-        
-        access_token = TokenUtil.generate_access_token(user)
-        
-        if TokenUtil.validate_access_token(access_token):
-            return Response({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
+            if not authorization_header:
+                return Response({"error": "Refresh token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
             
-            user_token = Token.objects.get(refresh_token=refresh_token)
-            user_token.access_token = access_token
-            user_token.save()
+            _, refresh_token = authorization_header.split()
             
-            return Response({'access_token': access_token}, status=status.HTTP_200_OK)
-    
+            print(refresh_token)
+            token_key = Token.objects.filter(refresh_token=refresh_token).first()
+            
+            print(token_key)
+            if not token_key:
+                return Response({"error": "Refresh token not found."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            refresh_token_valid = TokenUtil.is_refresh_token_expired(token_key.refresh_token)
+            
+            if refresh_token_valid:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+            # Validate the refresh token
+            refresh_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+            
+            if not refresh_token_payload:
+                return Response({'error': 'Unable to decode refresh code'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = refresh_token_payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'The id key not found in token for the user.'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Generate a new access token
+            user = Student.objects.get(id=user_id)
+            
+            access_token = TokenUtil.generate_access_token(user)
+            
+            if TokenUtil.validate_access_token(access_token):
+                return Response({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            else:
+                
+                user_token = Token.objects.get(refresh_token=refresh_token)
+                user_token.access_token = access_token
+                user_token.save()
+                
+                return Response({'access_token': access_token}, status=status.HTTP_200_OK)
+            
+        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
+            print("error")
+            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        except Exception as e:
+            print(e)
+            
+            return Response({'error': f'{e} hey'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 class LogoutView(APIView):
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)

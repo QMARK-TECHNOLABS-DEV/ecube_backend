@@ -4,10 +4,12 @@ from ..register_student.models import Student
 # Create your models here.
 class Token(models.Model):
     user = models.ForeignKey(Student, on_delete=models.CASCADE)
-    access_token = models.TextField(unique=True)
-    refresh_token = models.TextField(unique=True)
+    access_token = models.CharField(max_length=255)
+    refresh_token = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
+    class Meta:
+        db_table = 'token'
     def __str__(self):
         return f"Token for {self.user.id}"
     

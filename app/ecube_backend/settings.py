@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5f^9ry_)pq6yl(_byrti%@sp&hec$$9qwjp9pt6=#8+lpd4z_!'
+SECRET_KEY = '7xsfw19-4zh8+i0ot&7w))farxvh1(e+f487#!3i3ex6^ox(1#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -56,12 +56,6 @@ INSTALLED_APPS = [
     'apps.class_updates',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:4200",
-    "http://sapadminportal.online.s3-website-us-east-1.amazonaws.com",
-    "https://localhost:3000",
-    "https://localhost:4200",]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -133,8 +127,10 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 # Token expiration times in minutes
-ACCESS_TOKEN_EXPIRATION = 2
+
+ACCESS_TOKEN_EXPIRATION = 1
 REFRESH_TOKEN_EXPIRATION = 48
+
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 

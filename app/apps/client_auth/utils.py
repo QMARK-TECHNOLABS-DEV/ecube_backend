@@ -8,11 +8,7 @@ from django.conf import settings
 class TokenUtil:
     @staticmethod
     def generate_tokens(user):
-        # Check if tokens already exist for the user
-        # existing_tokens = Token.objects.filter(user=user).first()
-        # if existing_tokens:
-        #     existing_tokens.delete()
-
+        
         # Generate new tokens
         access_token = TokenUtil.generate_access_token(user)
         refresh_token = TokenUtil.generate_refresh_token(user)
@@ -22,25 +18,31 @@ class TokenUtil:
         
         return access_token, refresh_token
     
-    @staticmethod
-    def validate_access_token(access_token):
-        # Check if tokens already exist for the user
-        existing_tokens = Token.objects.filter(access_token=access_token).first()
-        if existing_tokens:
-            return existing_tokens.access_token
-        else:
-            return False
-        
-    @staticmethod
+    @staticmethod  
     def generate_access_token(user):
-        expiration_time = datetime.now(timezone.utc) + timedelta(days=settings.ACCESS_TOKEN_EXPIRATION)
-        payload = {
-            'id': user.id,
-            'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
-            'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
-        }
-        return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-    
+        try:
+            expiration_time = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION)
+            payload = {
+                'id': user.id,
+                'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
+                'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
+            }
+            return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        except Exception as e:
+            print(e)
+    @staticmethod
+    def generate_refresh_token(user):
+        try:
+            expiration_time = datetime.now(timezone.utc) + timedelta(weeks=settings.REFRESH_TOKEN_EXPIRATION)
+            payload = {
+                'id': user.id,
+                'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
+                'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
+            }
+            
+            return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        except Exception as e:
+            print(e)
     @staticmethod
     def validate_tokens(access_token, refresh_token):
         # Validate the access token
@@ -57,7 +59,7 @@ class TokenUtil:
                 return False  # The refresh token is not associated with a user
 
             # Generate a new access token
-            user = Student.objects.get(pk=user_id)  # Replace with your user retrieval logic
+            user = Student.objects.get(id=user_id)  # Replace with your user retrieval logic
             new_access_token = TokenUtil.generate_access_token(user)
 
             return new_access_token  # Return the new access token
@@ -67,18 +69,19 @@ class TokenUtil:
         if not refresh_token_payload:
             return False  # Refresh token is invalid or expired
 
+        # You can also perform additional checks here if needed
+        # For example, check if the tokens belong to the same user
+
         return True  # Both tokens are valid
     
-    
     @staticmethod
-    def generate_refresh_token(user):
-        expiration_time = datetime.now(timezone.utc) + timedelta(weeks=settings.REFRESH_TOKEN_EXPIRATION)
-        payload = {
-            'id': user.id,
-            'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
-            'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
-        }
-        return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    def validate_access_token(access_token):
+        # Check if tokens already exist for the user
+        existing_tokens = Token.objects.filter(access_token=access_token).first()
+        if existing_tokens:
+            return existing_tokens.access_token
+        else:
+            return False
 
     @staticmethod
     def is_token_valid(token):
@@ -96,13 +99,12 @@ class TokenUtil:
     @staticmethod
     def is_token_expired(token):
         try:
-            token_value = Token.objects.filter(access_token=token)
-            if not token_value:
-                return True  # Token not found, consider it expired
+
             
             print("token found")
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             exp = payload.get('exp')
+            print(payload)
             if datetime.now() > datetime.fromtimestamp(exp):
                 return True  # Token has expired
             else:
@@ -113,11 +115,11 @@ class TokenUtil:
     @staticmethod
     def is_refresh_token_expired(token):
         try:
-            token_value = Token.objects.filter(refresh_token=token)
-            if not token_value:
-                return True  # Token not found, consider it expired
+            # token_value = Token.objects.filter(refresh_token=token)
+            # if not token_value:
+            #     return True  # Token not found, consider it expired
             
-            print("token found")
+            # print("token found")
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             exp = payload.get('exp')
             print(exp)
@@ -147,3 +149,6 @@ class TokenUtil:
     @staticmethod
     def blacklist_token(token):
         Token.objects.filter(access_token=token).delete()
+        
+        
+
