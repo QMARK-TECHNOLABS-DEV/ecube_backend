@@ -314,12 +314,12 @@ class ValidateTokenView(APIView):
                 return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
             # Implement additional authorization logic here if needed
+            
+            return Response({"message": "Access token is valid.", "access_token": token}, status=status.HTTP_200_OK)
 
         except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
             return Response({"error": "Invalid or expired access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Access token is valid; you can proceed with request processing
-        return Response({"message": "Access token is valid.", "access_token": token_key.access_token}, status=status.HTTP_200_OK)
 
 class RequestAccessTokenWeb(APIView):
     def post(self, request):

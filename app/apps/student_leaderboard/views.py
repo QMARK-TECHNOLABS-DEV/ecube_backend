@@ -381,3 +381,24 @@ class GetExams(APIView):
             exams.append(row[0])
             
         return Response({'exams': exams}, status=status.HTTP_200_OK) 
+    
+    
+class RecalculateLeaderBoardByClass(APIView):
+    def post(self, request):
+        try:
+            batch_year_cap = request.GET.get('batch_year')
+            class_name_cap = request.GET.get('class_name')
+            division_cap = request.GET.get('division')
+            
+            if batch_year_cap is None or class_name_cap is None or division_cap is None:
+                return Response({'status': 'failure', 'message': 'batch_year, class_name, and division are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            batch_year = str(batch_year_cap)
+            class_name = str(class_name_cap).replace(" ", "").lower()
+            division = str(division_cap).replace(" ", "").lower()
+            
+            app_name = 'register_student_'
+            
+        except Exception as e:
+            print(e)
+            return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

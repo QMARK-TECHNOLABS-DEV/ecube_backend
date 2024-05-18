@@ -107,6 +107,15 @@ class ExamResult(APIView, CustomPageNumberPagination):
                     print("Query Results:", query_results)
 
                     try:
+
+                        # Convert null subject scores to zero
+                        if physics is None:
+                            physics = 0
+                        if chemistry is None:
+                            chemistry = 0
+                        if maths is None:
+                            maths = 0
+
                         if query_results is None:
                             print("Inserting into the table")
                             cursor = connection.cursor()
@@ -118,6 +127,7 @@ class ExamResult(APIView, CustomPageNumberPagination):
                         cursor.close()
 
                     except Exception as e:
+                        print(e)
                         return Response({'status': 'failure', 'message': 'admission_no, physics, chemistry, and maths are required'}, status=status.HTTP_400_BAD_REQUEST)
                     
             student_list = Student.objects.filter(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif).values('device_id')
@@ -152,6 +162,7 @@ class ExamResult(APIView, CustomPageNumberPagination):
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(e)
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         
