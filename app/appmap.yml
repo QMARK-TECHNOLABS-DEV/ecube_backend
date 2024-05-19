@@ -1,0 +1,14 @@
+appmap_dir: tmp/appmap
+language: python
+name: app
+packages:
+  - path: student_leaderboard
+  - path: student_dashboard
+  - path: admin_auth
+  - path: migrations
+  - path: student_attendance
+  - path: class_management
+  - path: student_exam_result
+  - path: student_daily_activities
+  - path: client_auth
+  - path: class_updates
