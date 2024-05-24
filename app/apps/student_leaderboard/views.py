@@ -399,6 +399,53 @@ class RecalculateLeaderBoardByClass(APIView):
             
             app_name = 'register_student_'
             
+            cursor = connection.cursor()
+            
+            try:
+                cursor.execute(f"DELETE FROM public.{app_name}{app_name}{batch_year}_{class_name}_{division}_leaderboard;")
+                
+                # cursor.execute(f"SELECT DISTINCT exam_name FROM public.{app_name}{app_name}{batch_year}_{class_name}_{division}_examresults;")
+                    
+                # query_results = cursor.fetchall()
+
+                # for exam in query_results:
+                    
+                cursor.execute(f'''
+                    INSERT INTO public.{app_name}{app_name}{batch_year}_{class_name}_{division}_leaderboard (admission_no, physics, chemistry, maths)
+                    SELECT 
+                        admission_no,
+                        CASE WHEN SUM(physics) IS NULL THEN NULL ELSE COALESCE(SUM(physics), 0) END AS total_physics,
+                        CASE WHEN SUM(chemistry) IS NULL THEN NULL ELSE COALESCE(SUM(chemistry), 0) END AS total_chemistry,
+                        CASE WHEN SUM(maths) IS NULL THEN NULL ELSE COALESCE(SUM(maths), 0) END AS total_maths
+                    FROM (
+                        SELECT 
+                            admission_no, 
+                            SUM(physics) AS physics,
+                            SUM(chemistry) AS chemistry,
+                            SUM(maths) AS maths
+                        FROM 
+                            (SELECT 
+                                admission_no, 
+                                exam_name, 
+                                CASE WHEN physics IS NULL THEN NULL ELSE COALESCE(physics, 0) END AS physics, 
+                                CASE WHEN chemistry IS NULL THEN NULL ELSE COALESCE(chemistry, 0) END AS chemistry, 
+                                CASE WHEN maths IS NULL THEN NULL ELSE COALESCE(maths, 0) END AS maths
+                            FROM 
+                                public.{app_name}{app_name}{batch_year}_{class_name}_{division}_examresults) AS subquery
+                        GROUP BY 
+                            admission_no, exam_name
+                    ) AS total_scores
+                    GROUP BY 
+                        admission_no;
+                ''')
+                
+                cursor.close()
+                
+                return Response({'status': 'success', 'message': 'Leaderboard recalculated successfully'}, status=status.HTTP_200_OK)
+                                        
+            except Exception as e:
+                return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
         except Exception as e:
             print(e)
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

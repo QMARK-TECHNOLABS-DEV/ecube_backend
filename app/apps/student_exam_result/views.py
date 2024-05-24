@@ -85,6 +85,30 @@ class ExamResult(APIView, CustomPageNumberPagination):
                 physics = item.get('physics')
                 chemistry = item.get('chemistry')
                 maths = item.get('maths')
+                
+                if item.get('physics_status'):
+                    physics_status = item.get('physics_status')
+                
+                if item.get('chemistry_status'):
+                    chemistry_status = item.get('chemistry_status')
+                    
+                if item.get('maths_status'):
+                    maths_status = item.get('maths_status')
+                
+                if physics_status == "NA" or physics_status == "AB":
+                    physics = None
+                else:
+                    physics_status = None
+                    
+                if chemistry_status == "NA" or chemistry_status == "AB":
+                    chemistry = None
+                else:
+                    chemistry_status = None
+                    
+                if maths_status == "NA" or maths_status == "AB":
+                    maths = None
+                else:
+                    maths_status = None
 
                 if admission_no is None or exam_name is None:
                     return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
@@ -96,7 +120,7 @@ class ExamResult(APIView, CustomPageNumberPagination):
                 query_results = cursor.fetchone()
 
                 if query_results is None:
-                    cursor.execute(f"INSERT INTO public.{table_name_examresults} (admission_no, exam_name, physics, chemistry, maths) VALUES (%s, %s, %s, %s, %s)", [admission_no, exam_name, physics, chemistry, maths])
+                    cursor.execute(f"INSERT INTO public.{table_name_examresults} (admission_no, exam_name, physics, chemistry, maths, physics_status, chemistry_status, maths_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [admission_no, exam_name, physics, chemistry, maths, physics_status, chemistry_status, maths_status])
                     cursor.close()
 
                     cursor = connection.cursor()
@@ -410,7 +434,10 @@ class ExamResult(APIView, CustomPageNumberPagination):
                             'exam_name': result[2],
                             'physics': result[3],
                             'chemistry': result[4],
-                            'maths': result[5]
+                            'maths': result[5],
+                            'physics_status': result[6],
+                            'chemistry_status': result[7],
+                            'maths_status': result[8]
                         })
                     except Exception as e:
                         print(e)

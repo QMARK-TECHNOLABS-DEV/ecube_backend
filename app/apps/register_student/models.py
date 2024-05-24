@@ -37,6 +37,9 @@ class ExamResults(models.Model):
     physics = models.DecimalField(null=True, blank=True,decimal_places=2,max_digits=5)
     chemistry = models.DecimalField(null=True, blank=True,decimal_places=2,max_digits=5)
     maths = models.DecimalField(null=True, blank=True,decimal_places=2,max_digits=5)
+    physics_status = models.CharField(max_length=20,null=True, blank=True)
+    chemistry_status = models.CharField(max_length=20,null=True, blank=True)
+    maths_status = models.CharField(max_length=20,null=True, blank=True)
     
     
 class LeaderBoard(models.Model):    
