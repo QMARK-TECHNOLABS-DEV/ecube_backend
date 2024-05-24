@@ -129,7 +129,7 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 # Token expiration times in minutes
 
 ACCESS_TOKEN_EXPIRATION = 2  # 2 hours
-REFRESH_TOKEN_EXPIRATION = 48 # 48 weeks
+REFRESH_TOKEN_EXPIRATION = 48  # 48 weeks
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
