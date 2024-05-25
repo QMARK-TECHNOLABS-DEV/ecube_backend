@@ -82,33 +82,34 @@ class ExamResult(APIView, CustomPageNumberPagination):
             for item in data:
                 admission_no = item.get('admission_no')
                 exam_name = item.get('exam_name')
-                physics = item.get('physics')
-                chemistry = item.get('chemistry')
-                maths = item.get('maths')
                 
-                if item.get('physics_status'):
-                    physics_status = item.get('physics_status')
-                
-                if item.get('chemistry_status'):
-                    chemistry_status = item.get('chemistry_status')
-                    
-                if item.get('maths_status'):
-                    maths_status = item.get('maths_status')
-                
-                if physics_status == "NA" or physics_status == "AB":
+                physics = item.get('physics', None)
+                chemistry = item.get('chemistry', None)
+                maths = item.get('maths', None)
+
+                physics_status = item.get('physics_status', None)
+                chemistry_status = item.get('chemistry_status', None)
+                maths_status = item.get('maths_status', None)
+
+                if physics_status in ["NA", "AB"]:
                     physics = None
-                else:
-                    physics_status = None
-                    
-                if chemistry_status == "NA" or chemistry_status == "AB":
+
+                if chemistry_status in ["NA", "AB"]:
                     chemistry = None
-                else:
-                    chemistry_status = None
-                    
-                if maths_status == "NA" or maths_status == "AB":
+
+                if maths_status in ["NA", "AB"]:
                     maths = None
-                else:
+
+                # Reset statuses to None if not "NA" or "AB" (if necessary, but seems redundant)
+                if physics_status not in ["NA", "AB"]:
+                    physics_status = None
+
+                if chemistry_status not in ["NA", "AB"]:
+                    chemistry_status = None
+
+                if maths_status not in ["NA", "AB"]:
                     maths_status = None
+
 
                 if admission_no is None or exam_name is None:
                     return Response({'status': 'failure', 'message': 'admission_no and exam_name are required for each item'}, status=status.HTTP_400_BAD_REQUEST)
