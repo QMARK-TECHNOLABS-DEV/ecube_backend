@@ -67,8 +67,8 @@ class DeleteAttendance(APIView):
                 "_" + class_name + "_" + division + "_attendance"
 
             cursor = connection.cursor()
-            cursor.execute(f"DELETE FROM public.{
-                           table_name} WHERE admission_no = %s;", (admission_no,))
+            # cursor.execute(f"DELETE FROM public.{
+            #                table_name} WHERE admission_no = %s;", (admission_no,))
 
             cursor.close()
 
