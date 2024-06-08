@@ -67,9 +67,8 @@ class DeleteAttendance(APIView):
                 "_" + class_name + "_" + division + "_attendance"
 
             cursor = connection.cursor()
-            # cursor.execute(f"DELETE FROM public.{
-            #                table_name} WHERE admission_no = %s;", (admission_no,))
-
+            cursor.execute(f"DELETE FROM public.{
+                           table_name} WHERE admission_no = %s;", [admission_no])
             cursor.close()
 
             return Response({'status': 'successfully deleted'}, status=status.HTTP_200_OK)
@@ -354,8 +353,8 @@ class AdminGetAttendance(APIView, CustomPageNumberPagination):
                 query_date = attendance_date
 
             cursor = connection.cursor()
-            cursor.execute(f"SELECT DISTINCT ON (admission_no) * FROM public.{
-                           table_name} WHERE date = %s AND subject = %s;", [query_date, subject])
+            cursor.execute(
+                f"SELECT * FROM public.{table_name} WHERE date = %s AND subject = %s;", [query_date, subject])
             query_result = cursor.fetchall()
             cursor.close()
 
