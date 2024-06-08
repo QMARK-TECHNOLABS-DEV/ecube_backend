@@ -1,12 +1,12 @@
-version: '3.8'
+version: "3.8"
 
 services:
   web:
-    build: 
+    build:
       context: ./app
       dockerfile: Dockerfile.prod
     restart: unless-stopped
-    command: PYTHONDONTWRITEBYTECODE=1 gunicorn ecube_backend.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn ecube_backend.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/home/app/web/staticfiles
     expose:
