@@ -68,7 +68,8 @@ class DeleteAttendance(APIView):
 
             cursor = connection.cursor()
             cursor.execute(f"DELETE FROM public.{
-                           table_name} WHERE admission_no = %s;", [admission_no])
+                           table_name} WHERE admission_no = %s;", (admission_no,))
+
             cursor.close()
 
             return Response({'status': 'successfully deleted'}, status=status.HTTP_200_OK)
