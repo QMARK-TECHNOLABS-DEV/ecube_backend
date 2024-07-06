@@ -17,19 +17,19 @@ class class_details(models.Model):
     daily_class_date = models.TextField(blank=True,null=True)
 
 class Student(models.Model):
-
     name = models.TextField()
-    admission_no = models.CharField(max_length=20,unique=True)
-    phone_no = models.CharField(max_length=15,primary_key=False,unique=True)
-    batch_year = models.TextField(null=False, blank=False,default=0)
+    admission_no = models.CharField(max_length=20, unique=True)
+    phone_no = models.CharField(max_length=15, unique=True)
+    batch_year = models.TextField(null=False, blank=False, default=0)
     class_name = models.CharField(max_length=10)
     division = models.CharField(max_length=1)
     subjects = models.TextField()
-    class_group = models.TextField(null=False, blank=False,default='')
+    class_group = models.TextField(null=False, blank=False, default='')
     school_name = models.TextField()
     device_id = models.TextField(default='')
     restricted = models.BooleanField(default=False)
-    email_id = models.EmailField(max_length=254,unique=True, null=True, blank=True)
+    email_id = models.EmailField(max_length=254, unique=True, null=True, blank=True)
+
 
 class ExamResults(models.Model):
     admission_no = models.CharField(max_length=20)  # Specify the max_length

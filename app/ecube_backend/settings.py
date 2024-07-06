@@ -109,16 +109,26 @@ WSGI_APPLICATION = 'ecube_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("SQL_USER", "user"),
-        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
-        "HOST": os.environ.get("SQL_HOST", "localhost"),
-        "PORT": os.environ.get("SQL_PORT", "5432"),
+        "ENGINE": os.getenv("SQL_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.getenv("SQL_DATABASE", os.path.join(BASE_DIR, "db.sqlite3")),
+        "USER": os.getenv("SQL_USER", "user"),
+        "PASSWORD": os.getenv("SQL_PASSWORD", "password"),
+        "HOST": os.getenv("SQL_HOST", "localhost"),
+        "PORT": os.getenv("SQL_PORT", "5432"),
     }
 }
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'ecube',
+#         'USER': 'postgres.zfmegarbrbpxxuvxninj',
+#         'PASSWORD': 'XFEcSbSpCg1Ovjr8',
+#         'HOST': 'aws-0-ap-south-1.pooler.supabase.com',
+#         'PORT': '6543',
+#     }
+# }
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp-relay.brevo.com'
@@ -128,7 +138,7 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 # Token expiration times in minutes
 
-ACCESS_TOKEN_EXPIRATION = 2  # 2 hours
+ACCESS_TOKEN_EXPIRATION = 5  # 2 hours
 REFRESH_TOKEN_EXPIRATION = 48  # 48 weeks
 
 # Password validation
