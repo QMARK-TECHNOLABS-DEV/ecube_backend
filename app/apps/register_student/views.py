@@ -7,8 +7,8 @@ from .serializers import ClassDetailsSerializer, StudentSerializer, ExamStudentD
 import pandas as pd
 from django.db import connection, DatabaseError
 from ..client_auth.utils import TokenUtil
-from ..client_auth.models import Token
-from ..class_updates.models import class_updates_link
+
+from ..class_updates.models import class_updates_link, recordings
 from django.db.models.functions import Cast
 from django.db.models import Max, IntegerField
 from ecube_backend.pagination import CustomPageNumberPagination
@@ -23,11 +23,6 @@ class StudentSoftDelete(APIView):
                 student_instance.restricted = restricted_status
                 student_instance.save()
                 
-                if restricted_status:
-                    user_token = Token.objects.filter(user_id=student_id)
-                    
-                    for token in user_token:
-                        token.delete()
                         
                 return Response({'message': 'Student record restricted successfully'}, status=status.HTTP_200_OK)
             else:
@@ -345,7 +340,26 @@ class ClassMethods(APIView):
                         
                 if class_details.objects.filter(class_name=data['class_name'], division=data['division'], batch_year=data['batch_year']).exists():
                     return Response({'Message': 'Class already exists'}, status=status.HTTP_400_BAD_REQUEST)
-                        
+                
+                all_class_updates = class_updates_link.objects.filter(class_name=class_instance.class_name, batch_year=class_instance.batch_year, division=class_instance.division)
+                
+                for class_updates in all_class_updates:
+                    class_updates.class_name = data["class_name"]
+                    class_updates.batch_year = data["batch_year"]
+                    class_updates.division = data["division"]
+                    
+                    class_updates.save()
+                    
+                all_recordings = recordings.objects.filter(class_name=class_instance.class_name, batch_year=class_instance.batch_year, division=class_instance.division)
+                
+                for recording in all_recordings:
+                    recording.class_name = data["class_name"]
+                    recording.batch_year = data["batch_year"]
+                    recording.division = data["division"]
+                    
+                    recording.save()
+                    
+                    
                 serializer = ClassDetailsSerializer(class_instance, data=data)
                 
                 if serializer.is_valid():
@@ -454,12 +468,7 @@ class DeviceIdMethods(APIView):
 
             _, token = authorization_header.split()
 
-            token_key = Token.objects.filter(access_token=token).first()
-
-            if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-            payload = TokenUtil.decode_token(token_key.access_token)
+            payload = TokenUtil.decode_token(token)
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:

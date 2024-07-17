@@ -1,44 +1,47 @@
 # customjwtapp/utils.py
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from .models import Token, Admin
 from django.conf import settings
 
 class TokenUtil:
     @staticmethod
     def generate_tokens(user):
-        # Check if tokens already exist for the user
-        existing_tokens = Token.objects.filter(user=user).first()
-
-
+        
         # Generate new tokens
         access_token = TokenUtil.generate_access_token(user)
         refresh_token = TokenUtil.generate_refresh_token(user)
         
-        # Store the new tokens in the database
-        Token.objects.create(user=user, access_token=access_token, refresh_token=refresh_token)
+        # # Store the new tokens in the database
+        # Token.objects.create(user=user, access_token=access_token, refresh_token=refresh_token)
         
         return access_token, refresh_token
-
     
-    @staticmethod
-    def validate_access_token(access_token):
-        # Check if tokens already exist for the user
-        existing_tokens = Token.objects.filter(access_token=access_token).first()
-        if existing_tokens:
-            return existing_tokens.access_token
-        else:
-            return False
-        
-    @staticmethod
+    @staticmethod  
     def generate_access_token(user):
-        payload = {
-            'id': user.id,
-            'exp': datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION),
-            'iat': datetime.utcnow(),
-        }
-        return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-    
+        try:
+            expiration_time = datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_EXPIRATION)
+            payload = {
+                'id': user.id,
+                'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
+                'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
+            }
+            return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        except Exception as e:
+            print(e)
+    @staticmethod
+    def generate_refresh_token(user):
+        try:
+            expiration_time = datetime.now(timezone.utc) + timedelta(weeks=settings.REFRESH_TOKEN_EXPIRATION)
+            payload = {
+                'id': user.id,
+                'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
+                'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
+            }
+            
+            return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        except Exception as e:
+            print(e)
     @staticmethod
     def validate_tokens(access_token, refresh_token):
         # Validate the access token
@@ -70,48 +73,65 @@ class TokenUtil:
 
         return True  # Both tokens are valid
     
-    
     @staticmethod
-    def generate_refresh_token(user):
-        payload = {
-            'id': user.id,
-            'exp': datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION),
-            'iat': datetime.utcnow(),
-        }
-        return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    def validate_access_token(access_token):
+        # Check if tokens already exist for the user
+        existing_tokens = Token.objects.filter(access_token=access_token).first()
+        if existing_tokens:
+            return existing_tokens.access_token
+        else:
+            return False
 
     @staticmethod
     def is_token_valid(token):
         try:
-            token_value = Token.objects.filter(access_token=token)
-            if token_value:
-                
-                # jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-                return True
-            else:
-                return False
+            if token:
+                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                exp = payload.get('exp')
+                if exp and datetime.now() < datetime.fromtimestamp(exp):
+                    return True  # Token is valid
+            return False  # Token not found in the database or expired
         except (jwt.ExpiredSignatureError, jwt.DecodeError):
-            return False
+            return False  # Token decoding error or expired signature
         
     @staticmethod
     def is_token_expired(token):
         try:
-            token_value = Token.objects.filter(access_token=token)
-            if token_value:
-                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-                exp = payload.get('exp')
-                if datetime.utcnow() > datetime.fromtimestamp(exp):
-                    return True
-                else:
-                    return False
+
+            
+            print("token found")
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            exp = payload.get('exp')
+            print(payload)
+            if datetime.now() > datetime.fromtimestamp(exp):
+                return True  # Token has expired
             else:
-                return False
+                return False  # Token is still valid
         except (jwt.ExpiredSignatureError, jwt.DecodeError):
-            return False
-        
+            return True  # Token decoding error or expired signature, consider it expired
+
+    @staticmethod
+    def is_refresh_token_expired(token):
+        try:
+            # token_value = Token.objects.filter(refresh_token=token)
+            # if not token_value:
+            #     return True  # Token not found, consider it expired
+            
+            # print("token found")
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            exp = payload.get('exp')
+            print(exp)
+            if datetime.now() > datetime.fromtimestamp(exp):
+                return True  # Token has expired
+            else:
+                return False  # Token is still valid
+        except (jwt.ExpiredSignatureError, jwt.DecodeError):
+            return True  # Token decoding error or expired signature, consider it expired
+            
     @staticmethod
     def decode_token(token):
         try:
+            
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             return payload
         except jwt.ExpiredSignatureError as e:

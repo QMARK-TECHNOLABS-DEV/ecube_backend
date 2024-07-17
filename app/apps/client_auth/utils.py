@@ -1,7 +1,6 @@
 # customjwtapp/utils.py
 import jwt
 from datetime import datetime, timedelta, timezone
-from .models import Token
 from ..register_student.models import Student
 from django.conf import settings
 
@@ -13,15 +12,15 @@ class TokenUtil:
         access_token = TokenUtil.generate_access_token(user)
         refresh_token = TokenUtil.generate_refresh_token(user)
         
-        # Store the new tokens in the database
-        Token.objects.create(user=user, access_token=access_token, refresh_token=refresh_token)
+        # # Store the new tokens in the database
+        # Token.objects.create(user=user, access_token=access_token, refresh_token=refresh_token)
         
         return access_token, refresh_token
     
     @staticmethod  
     def generate_access_token(user):
         try:
-            expiration_time = datetime.now(timezone.utc) + timedelta(seconds=settings.ACCESS_TOKEN_EXPIRATION)
+            expiration_time = datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_EXPIRATION)
             payload = {
                 'id': user.id,
                 'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
@@ -74,20 +73,12 @@ class TokenUtil:
 
         return True  # Both tokens are valid
     
-    @staticmethod
-    def validate_access_token(access_token):
-        # Check if tokens already exist for the user
-        existing_tokens = Token.objects.filter(access_token=access_token).first()
-        if existing_tokens:
-            return existing_tokens.access_token
-        else:
-            return False
+
 
     @staticmethod
     def is_token_valid(token):
         try:
-            token_value = Token.objects.filter(access_token=token)
-            if token_value:
+            if token:
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
                 exp = payload.get('exp')
                 if exp and datetime.now() < datetime.fromtimestamp(exp):

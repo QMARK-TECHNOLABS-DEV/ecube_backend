@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.db import connection
 from ..register_student.models import Student, class_details
 from ..client_auth.utils import TokenUtil
-from ..client_auth.models import Token
+
 from ecube_backend.pagination import CustomPageNumberPagination
 import pandas as pd
 import requests, json
@@ -245,13 +245,8 @@ class GetDates(APIView):
       
         _, token = authorization_header.split()
         
-        token_key = Token.objects.filter(access_token=token).first()
-        
-        if not token_key:
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-        
 
-        payload = TokenUtil.decode_token(token_key.access_token)
+        payload = TokenUtil.decode_token(token)
 
         # Optionally, you can extract user information or other claims from the payload
         if not payload:
@@ -310,13 +305,8 @@ class GetDailyUpdate(APIView):
       
         _, token = authorization_header.split()
         
-        token_key = Token.objects.filter(access_token=token).first()
-        
-        if not token_key:
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-        
 
-        payload = TokenUtil.decode_token(token_key.access_token)
+        payload = TokenUtil.decode_token(token)
         
 
         # Optionally, you can extract user information or other claims from the payload

@@ -5,7 +5,6 @@ from .models import class_updates_link, announcements, recordings
 from .serializers import recordings_get_serializer,class_updates_link_serializer, class_updates_link_get_serializer, announcement_serializer, recording_serializer
 from ..register_student.models import Student , class_details
 from ..client_auth.utils import TokenUtil
-from ..client_auth.models import Token
 import datetime, requests, json
 from django.utils import timezone
 from ecube_backend.pagination import CustomPageNumberPagination
@@ -47,6 +46,7 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
         data['division'] = data['division'].upper()
         data['topic'] = data['topic'].upper()
         
+        print(data)
         class_group = class_details.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).first()
         
         if class_group == None:
@@ -67,6 +67,7 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
         batch_year = request.query_params.get('batch_year')
         division = request.query_params.get('division')
         
+        
         if class_name == None or batch_year == None or division == None:
             class_update_instance = class_updates_link.objects.order_by('-upload_time').first()
             
@@ -83,6 +84,9 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
             
         queryset = class_updates_link.objects.filter(class_name=class_name, batch_year=batch_year, division=division).order_by('-upload_time')
         
+        # queryset = class_updates_link.objects.all().order_by('-upload_time')
+        
+        print(queryset)
         queryset = self.paginate_queryset(queryset, request)
         
         serializer = class_updates_link_serializer(queryset, many=True)
@@ -180,12 +184,7 @@ class Class_Update_Client_Side(APIView):
 
         _, token = authorization_header.split()
 
-        token_key = Token.objects.filter(access_token=token).first()
-
-        if not token_key:
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        payload = TokenUtil.decode_token(token_key.access_token)
+        payload = TokenUtil.decode_token(token)
 
         # Optionally, you can extract user information or other claims from the payload
         if not payload:
@@ -204,6 +203,7 @@ class Class_Update_Client_Side(APIView):
         class_name = user.class_name
         division = user.division
         
+        print(class_name, batch_year, division)
         if class_name == None or batch_year == None or division == None:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -249,12 +249,7 @@ class GetRecordingDates(APIView):
 
             _, token = authorization_header.split()
 
-            token_key = Token.objects.filter(access_token=token).first()
-
-            if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-            payload = TokenUtil.decode_token(token_key.access_token)
+            payload = TokenUtil.decode_token(token)
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:
@@ -292,12 +287,7 @@ class recording_client_side(APIView):
 
             _, token = authorization_header.split()
 
-            token_key = Token.objects.filter(access_token=token).first()
-
-            if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-            payload = TokenUtil.decode_token(token_key.access_token)
+            payload = TokenUtil.decode_token(token)
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:
@@ -349,12 +339,7 @@ class recording_client_side_web(APIView):
 
             _, token = authorization_header.split()
 
-            token_key = Token.objects.filter(access_token=token).first()
-
-            if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-            payload = TokenUtil.decode_token(token_key.access_token)
+            payload = TokenUtil.decode_token(token)
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:

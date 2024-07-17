@@ -5,6 +5,8 @@ urlpatterns = [
     path('send_otp/', views.SendOTPPhone.as_view(), name='send-otp'),
     path('send_otp_email/', views.SendOTPEmail.as_view(), name='send-otp-email'),
     
+    path('details/', views.GetDetails.as_view(), name='user-details'),
+    
     path('verify_otp/', views.VerifyOTP.as_view(), name='verify-otp'),
     path('verify_otp_email/', views.VerifyOTPEmail.as_view(), name='verify-otp-email'),
     

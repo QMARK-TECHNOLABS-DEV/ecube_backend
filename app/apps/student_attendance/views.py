@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from ..register_student.models import Student, class_details
 from ..client_auth.utils import TokenUtil
-from ..client_auth.models import Token
+
 from django.http import JsonResponse
 import pandas as pd
 import requests
@@ -562,12 +562,7 @@ class GetAttendance(APIView):
 
         _, token = authorization_header.split()
 
-        token_key = Token.objects.filter(access_token=token).first()
-
-        if not token_key:
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        payload = TokenUtil.decode_token(token_key.access_token)
+        payload = TokenUtil.decode_token(token)
 
         # Optionally, you can extract user information or other claims from the payload
         if not payload:
@@ -678,12 +673,7 @@ class GetAttendanceYearStatus(APIView):
 
             _, token = authorization_header.split()
 
-            token_key = Token.objects.filter(access_token=token).first()
-
-            if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-
-            payload = TokenUtil.decode_token(token_key.access_token)
+            payload = TokenUtil.decode_token(token)
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:

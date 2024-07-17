@@ -80,13 +80,9 @@ class SignUpUser(APIView):
                 user = serializer.save()
 
                 access_token, refresh_token = TokenUtil.generate_tokens(user)
-                
-
-    # Validate tokens
-                if TokenUtil.validate_tokens(access_token, refresh_token):
-                    return Response({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+                return Response({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
+      
                 
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -147,13 +143,7 @@ class ValidateTokenView(APIView):
         try:
             _, token = authorization_header.split()
             
-            token_key = Token.objects.filter(access_token=token).first()
-            
-            if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-            
-
-            payload = TokenUtil.decode_token(token_key.access_token)
+            payload = TokenUtil.decode_token(token)
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:
@@ -205,11 +195,6 @@ class RequestAccessToken(APIView):
         
         _, refresh_token = authorization_header.split()
         
-        token_key = Token.objects.filter(refresh_token=refresh_token).first()
-        
-        if not token_key:
-            return Response({"error": "refresh token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
-
         # Validate the refresh token
         refresh_token_payload = TokenUtil.decode_token(refresh_token)
         
@@ -230,11 +215,7 @@ class RequestAccessToken(APIView):
         if TokenUtil.validate_access_token(access_token):
             return Response({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
-            
-            user_token = Token.objects.get(refresh_token=refresh_token)
-            user_token.access_token = access_token
-            user_token.save()
-            
+               
             return Response({'access_token': access_token}, status=status.HTTP_200_OK)
  
 class ForgotPassword(APIView):
@@ -320,14 +301,8 @@ class LogoutUser(APIView):
 
 
             _, token = authorization_header.split()
-            
-            token_key = Token.objects.filter(access_token=token).first()
-            
-            if not token_key:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-            
 
-            payload = TokenUtil.decode_token(token_key.access_token)
+            payload = TokenUtil.decode_token(token)
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:
@@ -342,8 +317,7 @@ class LogoutUser(APIView):
 
             print("User logged out and starting to blacklist token")
             if TokenUtil.is_token_valid(token):
-                TokenUtil.blacklist_token(token)
-                
+
                 return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
             else:
                 return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
