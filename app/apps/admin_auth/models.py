@@ -8,15 +8,6 @@ class Admin(models.Model):
     def __str__(self):
         return self.id
     
-    
-class Token(models.Model):
-    user = models.ForeignKey(Admin, on_delete=models.CASCADE)
-    access_token = models.TextField(unique=True)
-    refresh_token = models.TextField(unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Token for {self.user.id}"
 class PasswordResetToken(models.Model):
     user = models.ForeignKey(Admin, on_delete=models.CASCADE)
     token = models.CharField(max_length=100)

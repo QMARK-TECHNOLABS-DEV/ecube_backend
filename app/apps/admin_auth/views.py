@@ -6,13 +6,10 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
 from django.shortcuts import render
 from .utils import TokenUtil
 import jwt
-from .models import Admin, Token, PasswordResetToken
+from .models import Admin
 from .serializers import UserSerializer
 from django.core.mail import send_mail
 from django.contrib import messages
@@ -210,13 +207,15 @@ class RequestAccessToken(APIView):
         # Generate a new access token
         user = Admin.objects.get(id=user_id)
         
-        access_token = TokenUtil.generate_access_token(user)
+        try:
+            access_token = TokenUtil.generate_access_token(user)
         
-        if TokenUtil.validate_access_token(access_token):
-            return Response({'error': 'Failed to generate access token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-               
             return Response({'access_token': access_token}, status=status.HTTP_200_OK)
+        
+        except Exception as e:   
+            
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
  
 class ForgotPassword(APIView):
     def post(self,request):

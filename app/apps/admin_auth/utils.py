@@ -1,7 +1,7 @@
 # customjwtapp/utils.py
 import jwt
 from datetime import datetime, timedelta, timezone
-from .models import Token, Admin
+from .models import Admin
 from django.conf import settings
 
 class TokenUtil:
@@ -73,14 +73,14 @@ class TokenUtil:
 
         return True  # Both tokens are valid
     
-    @staticmethod
-    def validate_access_token(access_token):
-        # Check if tokens already exist for the user
-        existing_tokens = Token.objects.filter(access_token=access_token).first()
-        if existing_tokens:
-            return existing_tokens.access_token
-        else:
-            return False
+    # @staticmethod
+    # def validate_access_token(access_token):
+    #     # Check if tokens already exist for the user
+    #     existing_tokens = Token.objects.filter(access_token=access_token).first()
+    #     if existing_tokens:
+    #         return existing_tokens.access_token
+    #     else:
+    #         return False
 
     @staticmethod
     def is_token_valid(token):

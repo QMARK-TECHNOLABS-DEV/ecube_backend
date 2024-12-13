@@ -139,7 +139,6 @@ class TokenUtil:
         
     @staticmethod
     def blacklist_token(token):
-        Token.objects.filter(access_token=token).delete()
-        
+        pass
         
 

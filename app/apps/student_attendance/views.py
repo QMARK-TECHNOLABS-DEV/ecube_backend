@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from ..register_student.models import Student, class_details
 from ..client_auth.utils import TokenUtil
-
+from django.utils.timezone import make_aware
 from django.http import JsonResponse
 import pandas as pd
 import requests
@@ -127,6 +127,7 @@ class AddAttendance(APIView):
         table_name = app_name + app_name+  batch_year + "_" + class_name + "_" + division + "_attendance"
         
         cursor = connection.cursor()
+        
         cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status,subject) VALUES (%s,%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student,subject])
         cursor.close()
         return Response({'status': 'success'}, status=status.HTTP_200_OK)
@@ -187,7 +188,7 @@ class AddAttendanceBulk(APIView):
                 first_name = row.get('First name', None)
                 last_name = row.get('Last name', None)
                 
-                if str(last_name) == "nan":
+                if str(last_name) == "" or str(last_name) == "nan" or str(last_name) == " " or str(last_name) == "None":
                     last_name = ""
                 full_name = str(first_name) + str(last_name)
 
@@ -221,9 +222,13 @@ class AddAttendanceBulk(APIView):
                         month_year_number = date[3:]
 
                         if admission_no is not None and month_year_number is not None and date is not None and status_student is not None:
-                            cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status,subject) VALUES (%s,%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student,subject])
+                            try:
+                                cursor.execute(f"INSERT INTO public.{table_name} (admission_no, month_year_number, date, status,subject) VALUES (%s,%s, %s, %s, %s)", [admission_no, month_year_number, date, status_student,subject])
                             
-                            print("Inserted")
+                                print("Inserted")
+                            except Exception as e:
+                                print(e)
+                                raise e
                             cursor.close()
                             
             if student_list:
@@ -234,11 +239,15 @@ class AddAttendanceBulk(APIView):
                 message_title = "Attendance Added"
                 message_desc = "Attendance has been added for " + date_attendance
                 message_type = "attendence"
-                send_notification_main(device_ids,message_title, message_desc, message_type)
+                # send_notification_main(device_ids,message_title, message_desc, message_type)
             
             class_group_instance = class_details.objects.get(batch_year=batch_year_notif, class_name=class_name_notif, division=division_notif)
+            naive_datetime = datetime.now()
+
+            # Convert to aware datetime
+            aware_datetime = make_aware(naive_datetime)
             
-            class_group_instance.attendance = datetime.now()
+            class_group_instance.attendance = aware_datetime
             
             class_group_instance.attendance_date = date_attendance
             
