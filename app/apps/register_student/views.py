@@ -399,7 +399,7 @@ class ClassMethods(APIView):
     def get(self, request):
             try: 
                 class_id = request.query_params.get('id')
-                
+                    
                 if class_id:
                     class_instance = class_details.objects.filter(id=class_id).first()
                     
@@ -496,7 +496,37 @@ class DeviceIdMethods(APIView):
                 return Response({"message": "Student does not exist"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:  # Catch specific exceptions for debugging
             return Response({"message": "Internal failure", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+class GetClassDetailsDashboard(APIView):
+    def get(self, request):
+        try:
+            year = request.query_params.get('year')
+            
+            if not year:
+                # latest year
+                year = class_details.objects.latest('batch_year').batch_year
+            
+            classInstance = class_details.objects.filter(batch_year=year)
+            
+            serialized_data = []
+            
+            for class_instance in classInstance:
+                students = Student.objects.filter(class_group=class_instance.id)
+                
+                class_serializer = ClassDetailsSerializer(class_instance)
+                class_data = class_serializer.data
+            
+            
+                class_data['total_students'] = students.count()
+                
+                serialized_data.append(class_data)
+            
+            return Response({"class_details": serialized_data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)  
+            return Response({"message": "Internal failure"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
 class StudentBulkMethods(APIView, CustomPageNumberPagination):
     
     def post(self, request, format=None):
