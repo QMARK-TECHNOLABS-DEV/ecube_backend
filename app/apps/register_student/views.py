@@ -7,7 +7,7 @@ from .serializers import ClassDetailsSerializer, StudentSerializer, ExamStudentD
 import pandas as pd
 from django.db import connection, DatabaseError
 from ..client_auth.utils import TokenUtil
-
+import re
 from ..class_updates.models import class_updates_link, recordings
 from django.db.models.functions import Cast
 from django.db.models import Max, IntegerField
@@ -274,11 +274,24 @@ class ClassCreatTables(APIView):
         except Exception as e:
             print(e)
             return Response({'message': 'Internal failure'}, status=status.HTTP_400_BAD_REQUEST)
+        
+def regexFilter(query):
+    query = re.sub(r'[^A-Za-z0-9-]', '', query)
+    query = query.replace('-', ' ')
+    return query
+
 class ClassMethods(APIView):
     def post(self, request):
         try:
             data = request.data
             
+            batch_year = regexFilter(data['batch_year'])
+            class_name = regexFilter(data['class_name'])
+            division = regexFilter(data['division'])
+            
+            data['batch_year'] = batch_year
+            data['class_name'] = class_name
+            data['division'] = division
             # Convert data values to uppercase
             for key in data:
                 if isinstance(data[key], str):
@@ -290,8 +303,8 @@ class ClassMethods(APIView):
                 if class_details.objects.filter(class_name=data['class_name'], division=data['division'], batch_year=data['batch_year']).exists():
                     return Response({'Message': 'Class already exists'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    
-                    table_name = f"{data['batch_year']}_{data['class_name']}_{data['division']}".replace(" ","").lower()
+                     
+                    table_name = f"{batch_year}_{class_name}_{division}".replace(" ","").lower()
              
                     if table_name:
                         
@@ -328,9 +341,11 @@ class ClassMethods(APIView):
                 
                 data = request.data
                 
-                new_batch_year = data['batch_year'].replace(" ","").lower()
-                new_class_name = data['class_name'].replace(" ","").lower()
-                new_division = data['division'].replace(" ","").lower()
+                
+                
+                new_batch_year = regexFilter(data['batch_year'])
+                new_class_name = regexFilter(data['class_name'])
+                new_division = regexFilter(data['division'])
                 
                 new_table_name = f"{app_name}{app_name}{new_batch_year}_{new_class_name}_{new_division}".replace(" ","").lower()
             # Convert data values to uppercase
@@ -338,29 +353,33 @@ class ClassMethods(APIView):
                     if isinstance(data[key], str):
                         data[key] = data[key].upper()
                         
-                if class_details.objects.filter(class_name=data['class_name'], division=data['division'], batch_year=data['batch_year']).exists():
+                if class_details.objects.filter(class_name=new_class_name, division=new_division, batch_year=new_batch_year).exists():
                     return Response({'Message': 'Class already exists'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 all_class_updates = class_updates_link.objects.filter(class_name=class_instance.class_name, batch_year=class_instance.batch_year, division=class_instance.division)
                 
                 for class_updates in all_class_updates:
-                    class_updates.class_name = data["class_name"]
-                    class_updates.batch_year = data["batch_year"]
-                    class_updates.division = data["division"]
+                    class_updates.class_name = new_class_name
+                    class_updates.batch_year = new_batch_year
+                    class_updates.division = new_division
                     
                     class_updates.save()
                     
                 all_recordings = recordings.objects.filter(class_name=class_instance.class_name, batch_year=class_instance.batch_year, division=class_instance.division)
                 
                 for recording in all_recordings:
-                    recording.class_name = data["class_name"]
-                    recording.batch_year = data["batch_year"]
-                    recording.division = data["division"]
+                    recording.class_name = new_class_name
+                    recording.batch_year = new_batch_year
+                    recording.division = new_division
                     
                     recording.save()
                     
-                    
-                serializer = ClassDetailsSerializer(class_instance, data=data)
+                
+                serializer = ClassDetailsSerializer(class_instance, data={
+                    'batch_year': new_batch_year,
+                    'class_name': new_class_name,
+                    'division': new_division
+                })
                 
                 if serializer.is_valid():
 
@@ -378,9 +397,9 @@ class ClassMethods(APIView):
                             students_instance = Student.objects.filter(class_group=class_instance.id)
                             
                             for student in students_instance:
-                                student.class_name = data['class_name']
-                                student.division = data['division']
-                                student.batch_year = data['batch_year']
+                                student.class_name = new_class_name
+                                student.division = new_division
+                                student.batch_year = new_batch_year
                                 student.save()
                                 
                         except DatabaseError as e:
