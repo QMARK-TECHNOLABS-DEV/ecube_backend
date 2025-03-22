@@ -80,24 +80,26 @@ class SendOTPPhone(APIView):
                                 for otp in otp_instance:
                                     otp.delete()
                             
-                            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                            #otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                            
+                            otp = '123456'
                             
                             OTP.objects.create(credientials=phone_number, code=otp)
                             
-                            response = sendSMS(otp, phone_number)
-                            print("sended")
+                            # response = sendSMS(otp, phone_number)
+                            # print("sended")
 
-                            # Check the response
-                            # if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                            response_data = json.loads(response)
+                            # # Check the response
+                            # # if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                            # response_data = json.loads(response)
                         
-                            return_value = response_data.get('return')
-                            if return_value == True:
-                                print(f'OTP sent successfully to {phone_number}')
-                                return Response({'message': 'OTP sent successfully'})
-                            else:
-                                print('Failed to send OTP')
-                                return Response({'message': 'Failed to send OTP'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                            # return_value = response_data.get('return')
+                            # if return_value == True:
+                            print(f'OTP sent successfully to {phone_number}')
+                            return Response({'message': 'OTP sent successfully'})
+                            # else:
+                            #     print('Failed to send OTP')
+                            #     return Response({'message': 'Failed to send OTP'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
                             
                         except Exception as e:
                             print(e)

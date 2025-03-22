@@ -341,8 +341,6 @@ class ClassMethods(APIView):
                 
                 data = request.data
                 
-                
-                
                 new_batch_year = regexFilter(data['batch_year'])
                 new_class_name = regexFilter(data['class_name'])
                 new_division = regexFilter(data['division'])
@@ -382,8 +380,7 @@ class ClassMethods(APIView):
                 })
                 
                 if serializer.is_valid():
-
-                    
+           
                     serializer.save()
                     
                     cursor = connection.cursor()
