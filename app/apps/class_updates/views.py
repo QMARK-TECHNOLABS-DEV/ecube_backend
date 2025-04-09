@@ -302,28 +302,51 @@ class recording_client_side(APIView):
             # Generate a new access token
             user = Student.objects.get(id=user_id)
             
+            
+            
             batch_year = user.batch_year
             class_name = user.class_name
             division = user.division
             
-            date = request.data['date']
+            date = request.data['date'] if request.data.get('date') else None
+            subject = request.data['subject'] if request.data.get('subject') else None
             
-            if not date:
-                return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)
             
-            if class_name == None or batch_year == None or division == None:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            else:
-                class_name = class_name.upper()
-                batch_year = batch_year.upper()
-                division = division.upper()
                 
-                print(date, class_name, batch_year, division)
-                recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date).order_by('-upload_time')
-            
-                recording_serializer = recordings_get_serializer(recordings_instance,many=True)
 
-                return Response({"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
+            if subject:
+                subject = subject.upper()
+                if subject not in ['PHYSICS', 'CHEMISTRY', 'MATHS']:
+                    return Response({"message": "Invalid subject"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if class_name == None or batch_year == None or division == None:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    class_name = class_name.upper()
+                    batch_year = batch_year.upper()
+                    division = division.upper()
+                    
+                    print(subject, class_name, batch_year, division, "subject")
+                    recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,subject=subject).order_by('-upload_time')
+                
+                    recording_serializer = recordings_get_serializer(recordings_instance,many=True)
+
+                    return Response({"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
+                
+            elif date:
+                if class_name == None or batch_year == None or division == None:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    class_name = class_name.upper()
+                    batch_year = batch_year.upper()
+                    division = division.upper()
+                    
+                    print(date, class_name, batch_year, division, "date")
+                    recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date).order_by('-upload_time')
+                
+                    recording_serializer = recordings_get_serializer(recordings_instance,many=True)
+
+                    return Response({"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
 
         except Exception as e:
             print(e)
