@@ -277,7 +277,7 @@ class GetRecordingDates(APIView):
             print(e)
             return Response({"message": str(e)})  
          
-class recording_client_side(APIView):
+class recording_client_side(APIView, CustomPageNumberPagination):
     def get(self, request):
         try:
             authorization_header = request.META.get("HTTP_AUTHORIZATION")
@@ -329,9 +329,18 @@ class recording_client_side(APIView):
                     print(subject, class_name, batch_year, division, "subject")
                     recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,subject=subject).order_by('-upload_time')
                 
+                    recordings_instance = self.paginate_queryset(recordings_instance, request)
+                    
                     recording_serializer = recordings_get_serializer(recordings_instance,many=True)
 
-                    return Response({"recorded_classes": recording_serializer.data}, status=status.HTTP_200_OK)
+                    return Response({
+                        "recorded_classes": recording_serializer.data,
+                        "total_pages": self.page.paginator.num_pages,
+                        "has_next": self.page.has_next(),
+                        "has_previous": self.page.has_previous(),
+                        "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                        "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,  
+                        }, status=status.HTTP_200_OK)
                 
             elif date:
                 if class_name == None or batch_year == None or division == None:
