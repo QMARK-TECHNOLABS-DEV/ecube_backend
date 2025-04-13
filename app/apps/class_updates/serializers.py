@@ -19,7 +19,7 @@ class announcement_serializer(ModelSerializer):
 class recordings_get_serializer(ModelSerializer):
     class Meta:
         model = recordings
-        fields = ['subject','recording_link','video_id']
+        fields = ['subject','recording_link','video_id', 'date']
         
 class recording_serializer(ModelSerializer):
     class Meta:
