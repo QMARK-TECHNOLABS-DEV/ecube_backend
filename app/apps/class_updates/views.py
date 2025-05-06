@@ -570,7 +570,21 @@ class RecordingsLink(APIView, CustomPageNumberPagination):
             division=division,
         ).order_by('-upload_time')
         
-        queryset = self.paginate_queryset(queryset, request)
+        # queryset = self.paginate_queryset(queryset, request)
+        
+        # serializer = recording_serializer(queryset, many=True)
+        
+        # response = {
+        #     "class_name":class_name,
+        #     "batch_year":batch_year,
+        #     "division":division,
+        #     "recordings":serializer.data,
+        #     "total_pages": self.page.paginator.num_pages,
+        #     "has_next": self.page.has_next(),
+        #     "has_previous": self.page.has_previous(),
+        #     "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+        #     "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,         
+        # }
         
         serializer = recording_serializer(queryset, many=True)
         
@@ -579,14 +593,13 @@ class RecordingsLink(APIView, CustomPageNumberPagination):
             "batch_year":batch_year,
             "division":division,
             "recordings":serializer.data,
-            "total_pages": self.page.paginator.num_pages,
-            "has_next": self.page.has_next(),
-            "has_previous": self.page.has_previous(),
-            "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
-            "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,         
+            "total_pages": 1,
+            "has_next": False,
+            "has_previous": False,
+            "next_page_number": None,
+            "previous_page_number": None,
         }
-
-
+        
         return Response(response, status=status.HTTP_200_OK)
 
 
