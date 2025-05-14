@@ -311,11 +311,17 @@ class recording_client_side(APIView, CustomPageNumberPagination):
             date = request.data['date'] if request.data.get('date') else None
             subject = request.data['subject'] if request.data.get('subject') else None
             
+            subject = subject.upper() if subject else None
+            userSubjects = user.subjects
             
-                
+            userSubjects = userSubjects.split(",")
+            userSubjects = [subject.strip().upper() for subject in userSubjects]
+            print(userSubjects)
 
             if subject:
-                subject = subject.upper()
+                if subject not in userSubjects:
+                    return Response({"message": "You are not allowed to access this subject"}, status=status.HTTP_404_NOT_FOUND)
+                
                 if subject not in ['PHYSICS', 'CHEMISTRY', 'MATHS']:
                     return Response({"message": "Invalid subject"}, status=status.HTTP_400_BAD_REQUEST)
                 
