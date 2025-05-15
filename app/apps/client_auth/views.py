@@ -131,13 +131,13 @@ class SendOTPEmail(APIView):
     def post(self, request):
         email_id = request.data.get('email')
   
-        print(email_id)
         # Ensure the email_id is valid (you might want to add more validation)
         if not email_id:
             return Response({'message': 'Invalid email id'}, status=status.HTTP_400_BAD_REQUEST)
         
+        
         print(email_id, type(email_id))
-        db_email_id = Student.objects.filter(email_id=email_id).first()
+        db_email_id = Student.objects.filter(email_id__iexact=email_id).first()
         
         if db_email_id is not None:
             if db_email_id.restricted == False:
