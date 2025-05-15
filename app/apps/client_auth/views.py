@@ -265,7 +265,7 @@ class VerifyOTPEmail(APIView):
             if expiry_time > current_time:
                 if entered_otp == str(otp.code):
                 
-                    user = Student.objects.filter(email_id=email_id).first()
+                    user = Student.objects.filter(email_id__iexact=email_id).first()
                     
                     if user is None:
                         return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
