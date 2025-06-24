@@ -368,7 +368,7 @@ class recording_client_side(APIView, CustomPageNumberPagination):
                     division = division.upper()
                     
                     print(date, class_name, batch_year, division, "date")
-                    recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date).order_by('-upload_time')
+                    recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date, subject__in=userSubjects).order_by('-upload_time')
                 
                     recording_serializer = recordings_get_serializer(recordings_instance,many=True)
 
@@ -406,6 +406,7 @@ class recording_client_side_web(APIView):
             batch_year = user.batch_year
             class_name = user.class_name
             division = user.division
+            userSubjects = [s.strip().upper() for s in (user.subjects or "").split(",") if s.strip()]
             
             date = request.query_params.get('date')
             
@@ -420,7 +421,7 @@ class recording_client_side_web(APIView):
                 division = division.upper()
                 
                 print(date, class_name, batch_year, division)
-                recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date).order_by('-upload_time')
+                recordings_instance = recordings.objects.filter(class_name=class_name, batch_year=batch_year, division=division,date=date, subject__in=userSubjects).order_by('-upload_time')
             
                 recording_serializer = recordings_get_serializer(recordings_instance,many=True)
 
@@ -514,51 +515,63 @@ def get_yt_video_id(url):
 class RecordingsLink(APIView, CustomPageNumberPagination):
     def post(self, request):
         try:
-            data=request.data
-            data['class_name'] = data['class_name'].upper()
-            data['batch_year'] = data['batch_year'].upper()
-            data['division'] = data['division'].upper()
-            data['subject'] = data['subject'].upper()
-            data['date'] = data['date'].upper()
-            
-            video_id = get_yt_video_id(data['recording_link'])
-            
-            recordings.objects.create(
-                    class_name=data['class_name'],
-                    batch_year=data['batch_year'],
-                    division=data['division'],
-                    subject=data['subject'],
-                    date=data['date'],
-                    recording_link=data['recording_link'],
-                    video_id=video_id
-                )
-            
-            students_instance = Student.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).values('device_id')
-                
-            if students_instance:
-                device_ids = [student['device_id'] for student in students_instance]
+            data = request.data
+            print("Incoming data:", data)  
 
-                print(device_ids)
-                
-                if data['subject'] == 'PHYSICS':
+            class_name = data.get('class_name', '').strip().upper()
+            batch_year = data.get('batch_year', '').strip().upper()
+            division = data.get('division', '').strip().upper()
+            subject = data.get('subject', '').strip().upper()
+            date = data.get('date', '').strip().upper()
+            recording_link = data.get('recording_link', '').strip()
+
+            if not all([class_name, batch_year, division, subject]):
+                return Response({"error": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                video_id = get_yt_video_id(recording_link)
+            except Exception as ve:
+                print("Error extracting video ID:", ve)
+                return Response({"error": "Invalid YouTube recording link."}, status=status.HTTP_400_BAD_REQUEST)
+
+            recordings.objects.create(
+                class_name=class_name,
+                batch_year=batch_year,
+                division=division,
+                subject=subject,
+                date=date,
+                recording_link=recording_link,
+                video_id=video_id
+            )
+
+            students_instance = Student.objects.filter(
+                class_name=class_name,
+                batch_year=batch_year,
+                division=division
+            ).values('device_id')
+
+            if students_instance:
+                device_ids = [student['device_id'] for student in students_instance if student.get('device_id')]
+
+                if device_ids:
+                    subject_display = {
+                        'PHYSICS': 'Physics',
+                        'CHEMISTRY': 'Chemistry',
+                        'MATHS': 'Maths',
+                    }.get(subject, subject.capitalize())
+
                     message_title = "Recorded Class Added"
-                    subject_name = "Physics"
-                elif data['subject'] == 'CHEMISTRY':
-                    message_title = "Recorded Class Added"
-                    subject_name = "Chemistry"
-                elif data['subject'] == 'MATHS':
-                    message_title = "Recorded Class Added"
-                    subject_name =  "Maths"
-            
-                message_desc = "Recorded class for "+ subject_name+ " for " + data['date'] +" have been added"
-                message_type = "liveclass"
-                send_notification_main(device_ids,message_title, message_desc, message_type)
-                
-            return Response({"message": "Recordings link added successfully"},status=status.HTTP_201_CREATED)
-            
+                    message_desc = f"Recorded class for {subject_display} on {date} has been added"
+                    message_type = "liveclass"
+
+                    send_notification_main(device_ids, message_title, message_desc, message_type)
+
+            return Response({"message": "Recordings link added successfully"}, status=status.HTTP_201_CREATED)
+
         except Exception as e:
-            print(e)
-            return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST)
+            print("exception check", e)
+            return Response({"message": "Bad Request"}, status=status.HTTP_400_BAD_REQUEST)
+
         
     
     def get(self, request):
