@@ -45,6 +45,7 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
         data['batch_year'] = data['batch_year'].upper()
         data['division'] = data['division'].upper()
         data['topic'] = data['topic'].upper()
+        data['subject'] = data['subject'].upper()
         
         print(data)
         class_group = class_details.objects.filter(class_name=data['class_name'], batch_year=data['batch_year'], division=data['division']).first()
@@ -202,6 +203,9 @@ class Class_Update_Client_Side(APIView):
         batch_year = user.batch_year
         class_name = user.class_name
         division = user.division
+        subjects = []
+        if user.subjects:
+            subjects = [item.strip().upper() for item in user.subjects.split(",") if item.strip()]
         
         print(class_name, batch_year, division)
         if class_name == None or batch_year == None or division == None:
@@ -213,11 +217,18 @@ class Class_Update_Client_Side(APIView):
 
             date = datetime.date.today()
             
-            queryset = class_updates_link.objects.filter(
-                class_name=class_name,
-                batch_year=batch_year,
-                division=division,
-            ).order_by('-upload_time')
+            filters = {
+                "class_name": class_name,
+                "batch_year": batch_year,
+                "division": division
+            }
+
+            if subjects:
+                filters["subject__in"] = subjects
+            else:
+                filters["subject__isnull"] = True
+
+            queryset = class_updates_link.objects.filter(**filters).order_by('-upload_time')
             
             announcement = announcements.objects.filter(upload_date=str(date)).first()
             
