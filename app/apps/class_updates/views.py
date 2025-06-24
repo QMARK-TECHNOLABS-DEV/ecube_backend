@@ -278,8 +278,9 @@ class GetRecordingDates(APIView):
             batch_year = user.batch_year
             class_name = user.class_name
             division = user.division
+            userSubjects = [s.strip().upper() for s in (user.subjects or "").split(",") if s.strip()]
             
-            dates_instance = recordings.objects.filter(batch_year=batch_year,class_name=class_name,division=division).values('date').distinct().order_by('-date')
+            dates_instance = recordings.objects.filter(batch_year=batch_year,class_name=class_name,division=division, subject__in=userSubjects).values('date').distinct().order_by('-date')
   
             unique_dates = [date['date'] for date in dates_instance]
 
