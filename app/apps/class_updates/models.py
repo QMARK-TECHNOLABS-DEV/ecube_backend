@@ -6,6 +6,7 @@ class class_updates_link(models.Model):
     division = models.CharField(max_length=1)
     link = models.CharField(max_length=100,null=True, blank=True)
     topic = models.CharField(max_length=100,null=True, blank=True)
+    subject = models.CharField(max_length=100,null=True, blank=True)
     upload_time = models.DateTimeField(auto_now_add=True)
     
 class announcements(models.Model):

@@ -4,7 +4,7 @@ from .models import class_updates_link, announcements, recordings
 class class_updates_link_serializer(ModelSerializer):
     class Meta:
         model = class_updates_link
-        fields = ('id','class_name', 'batch_year', 'division', 'link', 'topic','upload_time')
+        fields = ('id','class_name', 'batch_year', 'division', 'link', 'topic', 'subject', 'upload_time')
         
 class class_updates_link_get_serializer(ModelSerializer):
     class Meta:

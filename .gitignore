@@ -3,3 +3,4 @@ env/
 .vscode/
 .env.prod
 .env.dev
+venv/
