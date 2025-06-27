@@ -23,6 +23,7 @@ class TokenUtil:
             expiration_time = datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_EXPIRATION)
             payload = {
                 'id': user.id,
+                'user_type': 'admin',
                 'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
                 'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
             }
@@ -35,6 +36,7 @@ class TokenUtil:
             expiration_time = datetime.now(timezone.utc) + timedelta(weeks=settings.REFRESH_TOKEN_EXPIRATION)
             payload = {
                 'id': user.id,
+                'user_type': 'admin',
                 'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
                 'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
             }
@@ -54,11 +56,14 @@ class TokenUtil:
 
             # Check if the refresh token is associated with a user (add your logic here)
             user_id = refresh_token_payload.get('id')
-            if not user_id:
+            user_type = refresh_token_payload.get('user_type')
+
+            if not user_id or user_type != 'admin':
                 return False  # The refresh token is not associated with a user
 
             # Generate a new access token
             user = Admin.objects.get(pk=user_id)  # Replace with your user retrieval logic
+            print("admin user", user)
             new_access_token = TokenUtil.generate_access_token(user)
 
             return new_access_token  # Return the new access token
@@ -97,8 +102,6 @@ class TokenUtil:
     @staticmethod
     def is_token_expired(token):
         try:
-
-            
             print("token found")
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             exp = payload.get('exp')
@@ -131,7 +134,6 @@ class TokenUtil:
     @staticmethod
     def decode_token(token):
         try:
-            
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             return payload
         except jwt.ExpiredSignatureError as e:

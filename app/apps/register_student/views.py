@@ -12,21 +12,28 @@ from ..class_updates.models import class_updates_link, recordings
 from django.db.models.functions import Cast
 from django.db.models import Max, IntegerField
 from ecube_backend.pagination import CustomPageNumberPagination
+
 class StudentSoftDelete(APIView):
     def post(self, request):
         try:
             student_id = request.data.get('user_id')
             restricted_status = request.data.get('restricted_status')
-            
+
             student_instance = Student.objects.filter(id=student_id).first()
+
             if student_instance:
+                # Block/unblock the student
                 student_instance.restricted = restricted_status
+
+                if restricted_status is True or restricted_status == 'true':
+                    student_instance.device_id = ''  # To discontinue push notifications in mobile app
+
                 student_instance.save()
-                
-                        
-                return Response({'message': 'Student record restricted successfully'}, status=status.HTTP_200_OK)
+
+                return Response({'message': 'Student restriction updated and logout handled.'}, status=status.HTTP_200_OK)
             else:
                 return Response({'message': 'Student record does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
         except Exception as e:
             return Response({'message': 'Internal failure', 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
