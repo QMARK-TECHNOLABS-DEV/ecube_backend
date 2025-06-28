@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.conf import settings
 from datetime import datetime, timedelta
 from django.http import HttpResponseBadRequest
-
+from ecube_backend.utils import role_checker
 
 
 def generate_token(user_id, email):
@@ -290,6 +290,7 @@ class ResetPasswordSubmit(APIView):
         
 # logout user
 class LogoutUser(APIView):
+    @role_checker(allowed_roles=['admin'])
     def post(self,request):
         try:
             

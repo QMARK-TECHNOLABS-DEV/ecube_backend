@@ -7,8 +7,11 @@ from ..client_auth.utils import TokenUtil
 
 from ..register_student.models import class_details
 from ecube_backend.pagination import CustomPageNumberPagination
+from ecube_backend.utils import role_checker
+
 
 class AdminGetExams(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self,request):
         try:
             batch_year = request.GET.get('batch_year')
@@ -44,6 +47,7 @@ class AdminGetExams(APIView):
             print(e)
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class AdminGetLeaderBoard(APIView,CustomPageNumberPagination):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         
         batch_year_cap = request.GET.get('batch_year')
@@ -367,6 +371,7 @@ class GetExams(APIView):
     
     
 class RecalculateLeaderBoardByClass(APIView):
+    @role_checker(allowed_roles=['admin'])
     def post(self, request):
         try:
             batch_year_cap = request.GET.get('batch_year')

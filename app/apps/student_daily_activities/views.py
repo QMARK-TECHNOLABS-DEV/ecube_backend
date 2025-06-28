@@ -10,6 +10,8 @@ import pandas as pd
 import requests, json
 from datetime import datetime
 from django.utils import timezone
+from ecube_backend.utils import role_checker
+
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -388,6 +390,7 @@ class GetDailyUpdate(APIView):
         
         
 class AdminGetDates(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self,request):
         user_id = request.GET.get('user_id')
         
@@ -438,6 +441,7 @@ class AdminGetDates(APIView):
         return Response({'dates': dates_list}, status=status.HTTP_200_OK)
     
 class AdminDailyUpdateViewHome(APIView, CustomPageNumberPagination):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         try:
             batch_year_cap = request.query_params.get('batch_year')
@@ -529,6 +533,7 @@ class AdminDailyUpdateViewHome(APIView, CustomPageNumberPagination):
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
 class AdminGetDailyUpdate(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self,request):
         user_id = request.query_params.get('user_id')
         month_year = request.query_params.get('date')

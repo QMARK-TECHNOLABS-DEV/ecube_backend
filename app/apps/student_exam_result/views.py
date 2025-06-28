@@ -10,6 +10,8 @@ import pandas as pd
 import requests
 import json
 from datetime import datetime
+from ecube_backend.utils import role_checker
+
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -683,6 +685,7 @@ class ExamResultsView(APIView):
         
         
 class AdminExamResultsView(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         
         user_id = request.GET.get('user_id')

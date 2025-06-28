@@ -12,8 +12,11 @@ from ..class_updates.models import class_updates_link, recordings
 from django.db.models.functions import Cast
 from django.db.models import Max, IntegerField
 from ecube_backend.pagination import CustomPageNumberPagination
+from ecube_backend.utils import role_checker
+
 
 class StudentSoftDelete(APIView):
+    @role_checker(allowed_roles=['admin'])
     def post(self, request):
         try:
             student_id = request.data.get('user_id')
@@ -39,6 +42,7 @@ class StudentSoftDelete(APIView):
         
 
 class NextAdmNumber(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         try:
             highest_adm_no = Student.objects.annotate(admission_no_int=Cast('admission_no', IntegerField())).aggregate(max_admission_no=Max('admission_no_int'))['max_admission_no']
@@ -100,6 +104,7 @@ class NextAdmNumber(APIView):
 #             print(e)
 #             return Response({'message': 'Internal failure'}, status=status.HTTP_400_BAD_REQUEST)    
 class StudentMethods(APIView):
+    @role_checker(allowed_roles=['admin'])
     def post(self, request):
         
         batch_year = request.query_params.get('batch_year')
@@ -138,6 +143,7 @@ class StudentMethods(APIView):
             return Response({'Message': 'The record or student does not exist'} ,status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data[0], status=status.HTTP_200_OK)
     
+    @role_checker(allowed_roles=['admin'])
     def delete(self, request):
         student = Student.objects.filter(id=request.query_params.get('id'))
         
@@ -147,6 +153,7 @@ class StudentMethods(APIView):
         
         return Response({'Message': 'Record does not  exist'},status=status.HTTP_400_BAD_REQUEST)
     
+    @role_checker(allowed_roles=['admin'])
     def put(self, request):
         
         user_id = request.query_params.get('id')
@@ -259,6 +266,7 @@ class StudentMethods(APIView):
         return Response({'Message': 'Record does not exist'},status=status.HTTP_400_BAD_REQUEST)
     
 class ClassCreatTables(APIView):
+    @role_checker(allowed_roles=['admin'])
     def post(self, request):
         try:
             data = request.data
@@ -288,6 +296,7 @@ def regexFilter(query):
     return query
 
 class ClassMethods(APIView):
+    @role_checker(allowed_roles=['admin'])
     def post(self, request):
         try:
             data = request.data
@@ -329,9 +338,8 @@ class ClassMethods(APIView):
         except:
             return Response({"message": "Internal failure"},status=status.HTTP_400_BAD_REQUEST)
         
-    
-        
-        
+     
+    @role_checker(allowed_roles=['admin'])
     def put(self, request):
         try:
             class_id = request.data.get('id')  # Use request.data instead of request.POST
@@ -418,7 +426,7 @@ class ClassMethods(APIView):
         except Exception as e:  # Catch specific exceptions for debugging
             return Response({"message": "Internal failure", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-            
+    
     def get(self, request):
             try: 
                 class_id = request.query_params.get('id')
@@ -450,7 +458,8 @@ class ClassMethods(APIView):
             except Exception as e:
                 print(e)  
                 return Response({"message": "Internal failure"}, status=status.HTTP_400_BAD_REQUEST)
-        
+    
+    @role_checker(allowed_roles=['admin'])
     def delete(self, request):
             class_id = request.query_params.get('id')
             if not class_id:
@@ -551,7 +560,7 @@ class GetClassDetailsDashboard(APIView):
             
             
 class StudentBulkMethods(APIView, CustomPageNumberPagination):
-    
+    @role_checker(allowed_roles=['admin'])
     def post(self, request, format=None):
         
         try:
@@ -631,6 +640,7 @@ class StudentBulkMethods(APIView, CustomPageNumberPagination):
             return Response({'Message': 'Internal failure', 'error': str(e)} ,status=status.HTTP_400_BAD_REQUEST)
  
 class GetAllStudents(APIView):
+     @role_checker(allowed_roles=['admin'])
      def get(self, request):
         try:
             students = Student.objects.all()

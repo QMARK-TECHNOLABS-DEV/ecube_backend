@@ -11,6 +11,8 @@ import requests
 import json
 from datetime import datetime
 from ecube_backend.pagination import CustomPageNumberPagination
+from ecube_backend.utils import role_checker
+
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -260,6 +262,7 @@ class AddAttendanceBulk(APIView):
         
         
 class AdminGetAttendanceMonth(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         
         batch_year_cap = request.query_params.get('batch_year')
@@ -302,8 +305,8 @@ class AdminGetAttendanceMonth(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 class AdminGetAttendance(APIView,CustomPageNumberPagination):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
-        
         try:
         
             batch_year_cap = request.query_params.get('batch_year')
@@ -416,7 +419,9 @@ class AdminGetAttendance(APIView,CustomPageNumberPagination):
         
         except Exception as e:
             return Response({'status': 'failure', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class AdminGetIndReportAttendanceMonth(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         user_id = request.GET.get('user_id')
         subject = request.GET.get('subject')
@@ -469,7 +474,9 @@ class AdminGetIndReportAttendanceMonth(APIView):
 
   
         return Response(response_data, status=status.HTTP_200_OK)
+
 class AdminGetIndReportAttendance(APIView):
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         user_id = request.GET.get('user_id')
         

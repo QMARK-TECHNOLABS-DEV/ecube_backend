@@ -8,6 +8,7 @@ from ..client_auth.utils import TokenUtil
 import datetime, requests, json
 from django.utils import timezone
 from ecube_backend.pagination import CustomPageNumberPagination
+from ecube_backend.utils import role_checker
 
 def send_notification(registration_ids, message_title, message_desc, message_type):
     fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
@@ -39,6 +40,7 @@ def send_notification_main(registration,message_title, message_desc, message_typ
     print(result)
     
 class Class_Updates_Admin(APIView, CustomPageNumberPagination):
+    @role_checker(allowed_roles=['admin'])
     def post(self, request):
         data=request.data
         data['class_name'] = data['class_name'].upper()
@@ -63,6 +65,7 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
             print(serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+    @role_checker(allowed_roles=['admin'])
     def get(self, request):
         class_name = request.query_params.get('class_name')
         batch_year = request.query_params.get('batch_year')
@@ -107,7 +110,7 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
 
         return Response(response, status=status.HTTP_200_OK)
         
-        
+    @role_checker(allowed_roles=['admin'])
     def put(self, request):
         link_id = request.query_params.get('link_id')
         
@@ -158,7 +161,8 @@ class Class_Updates_Admin(APIView, CustomPageNumberPagination):
             else:
                 print(serializer.errors)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+
+    @role_checker(allowed_roles=['admin'])  
     def delete(self, request):
         link_id = request.query_params.get('link_id')
         
@@ -433,6 +437,7 @@ class recording_client_side_web(APIView):
             return Response({"message": "Bad Request"},status=status.HTTP_400_BAD_REQUEST) 
               
 class Announcements(APIView, CustomPageNumberPagination):
+    @role_checker(allowed_roles=['admin'])
     def post(self, request):
         data=request.data
 
@@ -470,6 +475,7 @@ class Announcements(APIView, CustomPageNumberPagination):
         
         return Response(response, status=status.HTTP_200_OK)
         
+    @role_checker(allowed_roles=['admin'])
     def put(self, request):
         data=request.data
         data['upload_date'] = data['upload_date'].upper()
@@ -482,6 +488,7 @@ class Announcements(APIView, CustomPageNumberPagination):
             
             return Response({"message": "announcements updated successfully"},status=status.HTTP_200_OK)
         
+    @role_checker(allowed_roles=['admin'])
     def delete(self, request):
         upload_date=request.query_params.get('upload_date')
         upload_date = upload_date.upper()
@@ -632,7 +639,6 @@ class RecordingsLink(APIView, CustomPageNumberPagination):
         }
         
         return Response(response, status=status.HTTP_200_OK)
-
 
     def put(self, request):
         data=request.data
