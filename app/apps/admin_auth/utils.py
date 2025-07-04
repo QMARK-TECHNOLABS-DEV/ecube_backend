@@ -4,46 +4,57 @@ from datetime import datetime, timedelta, timezone
 from .models import Admin
 from django.conf import settings
 
+
 class TokenUtil:
     @staticmethod
     def generate_tokens(user):
-        
+
         # Generate new tokens
         access_token = TokenUtil.generate_access_token(user)
         refresh_token = TokenUtil.generate_refresh_token(user)
-        
+
         # # Store the new tokens in the database
         # Token.objects.create(user=user, access_token=access_token, refresh_token=refresh_token)
-        
+
         return access_token, refresh_token
-    
-    @staticmethod  
+
+    @staticmethod
     def generate_access_token(user):
         try:
-            expiration_time = datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_EXPIRATION)
+            expiration_time = datetime.now(timezone.utc) + timedelta(
+                hours=settings.ACCESS_TOKEN_EXPIRATION
+            )
             payload = {
-                'id': user.id,
-                'user_type': 'admin',
-                'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
-                'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
+                "id": user.id,
+                "user_type": "admin",
+                "exp": expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
+                "iat": datetime.now(
+                    timezone.utc
+                ).timestamp(),  # Convert current time to Unix timestamp
             }
-            return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+            return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
         except Exception as e:
             print(e)
+
     @staticmethod
     def generate_refresh_token(user):
         try:
-            expiration_time = datetime.now(timezone.utc) + timedelta(weeks=settings.REFRESH_TOKEN_EXPIRATION)
+            expiration_time = datetime.now(timezone.utc) + timedelta(
+                weeks=settings.REFRESH_TOKEN_EXPIRATION
+            )
             payload = {
-                'id': user.id,
-                'user_type': 'admin',
-                'exp': expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
-                'iat': datetime.now(timezone.utc).timestamp(),  # Convert current time to Unix timestamp
+                "id": user.id,
+                "user_type": "admin",
+                "exp": expiration_time.timestamp(),  # Convert expiration time to Unix timestamp
+                "iat": datetime.now(
+                    timezone.utc
+                ).timestamp(),  # Convert current time to Unix timestamp
             }
-            
-            return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+            return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
         except Exception as e:
             print(e)
+
     @staticmethod
     def validate_tokens(access_token, refresh_token):
         # Validate the access token
@@ -55,14 +66,16 @@ class TokenUtil:
                 return False  # Both access and refresh tokens are invalid or expired
 
             # Check if the refresh token is associated with a user (add your logic here)
-            user_id = refresh_token_payload.get('id')
-            user_type = refresh_token_payload.get('user_type')
+            user_id = refresh_token_payload.get("id")
+            user_type = refresh_token_payload.get("user_type")
 
-            if not user_id or user_type != 'admin':
+            if not user_id or user_type != "admin":
                 return False  # The refresh token is not associated with a user
 
             # Generate a new access token
-            user = Admin.objects.get(pk=user_id)  # Replace with your user retrieval logic
+            user = Admin.objects.get(
+                pk=user_id
+            )  # Replace with your user retrieval logic
             print("admin user", user)
             new_access_token = TokenUtil.generate_access_token(user)
 
@@ -77,7 +90,7 @@ class TokenUtil:
         # For example, check if the tokens belong to the same user
 
         return True  # Both tokens are valid
-    
+
     # @staticmethod
     # def validate_access_token(access_token):
     #     # Check if tokens already exist for the user
@@ -91,27 +104,29 @@ class TokenUtil:
     def is_token_valid(token):
         try:
             if token:
-                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-                exp = payload.get('exp')
+                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+                exp = payload.get("exp")
                 if exp and datetime.now() < datetime.fromtimestamp(exp):
                     return True  # Token is valid
             return False  # Token not found in the database or expired
         except (jwt.ExpiredSignatureError, jwt.DecodeError):
             return False  # Token decoding error or expired signature
-        
+
     @staticmethod
     def is_token_expired(token):
         try:
             print("token found")
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            exp = payload.get('exp')
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            exp = payload.get("exp")
             print(payload)
             if datetime.now() > datetime.fromtimestamp(exp):
                 return True  # Token has expired
             else:
                 return False  # Token is still valid
         except (jwt.ExpiredSignatureError, jwt.DecodeError):
-            return True  # Token decoding error or expired signature, consider it expired
+            return (
+                True  # Token decoding error or expired signature, consider it expired
+            )
 
     @staticmethod
     def is_refresh_token_expired(token):
@@ -119,22 +134,24 @@ class TokenUtil:
             # token_value = Token.objects.filter(refresh_token=token)
             # if not token_value:
             #     return True  # Token not found, consider it expired
-            
+
             # print("token found")
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            exp = payload.get('exp')
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            exp = payload.get("exp")
             print(exp)
             if datetime.now() > datetime.fromtimestamp(exp):
                 return True  # Token has expired
             else:
                 return False  # Token is still valid
         except (jwt.ExpiredSignatureError, jwt.DecodeError):
-            return True  # Token decoding error or expired signature, consider it expired
-            
+            return (
+                True  # Token decoding error or expired signature, consider it expired
+            )
+
     @staticmethod
     def decode_token(token):
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             return payload
         except jwt.ExpiredSignatureError as e:
             # Token has expired, but we can still attempt to decode it for user information
@@ -144,8 +161,7 @@ class TokenUtil:
             # Token decoding error
             print(f"Token decoding error: {e}")
             return None
-        
-        
+
     @staticmethod
     def blacklist_token(token):
         Token.objects.filter(access_token=token).delete()

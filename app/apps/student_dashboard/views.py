@@ -7,29 +7,36 @@ from ..client_auth.utils import TokenUtil
 
 class StudentGetDashboard(APIView):
     def get(self, request):
-        
+
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
         if not authorization_header:
-            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "Access token is missing."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
-      
         _, token = authorization_header.split()
-        
+
         payload = TokenUtil.decode_token(token)
 
         # Optionally, you can extract user information or other claims from the payload
         if not payload:
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED
+            )
 
         # Check if the refresh token is associated with a user (add your logic here)
-        user_id = payload.get('id')
-        
+        user_id = payload.get("id")
+
         if not user_id:
-            return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "The refresh token is not associated with a user."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         # Generate a new access token
-        user = Student.objects.get(id=user_id) 
-        
+        user = Student.objects.get(id=user_id)
+
         student_info = {
             "name": user.name,
             "profile_image": "",
@@ -39,7 +46,6 @@ class StudentGetDashboard(APIView):
             "batch_year": user.batch_year,
             "subjects": user.subjects,
             "school_name": user.school_name,
-            
         }
-        
+
         return Response({"student_info": student_info}, status=status.HTTP_200_OK)

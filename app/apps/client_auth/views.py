@@ -10,178 +10,249 @@ from .utils import TokenUtil
 from .models import OTP
 from ..register_student.models import Student
 from .fast_sms import sendSMS
-from django.utils import timezone 
+from django.utils import timezone
 import random
 import jwt, json
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.db import connection
 
+
 class GetDetails(APIView):
     def get(self, request):
         try:
             authorization_header = request.META.get("HTTP_AUTHORIZATION")
             if not authorization_header:
-                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Access token is missing."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
             _, access_token = authorization_header.split()
 
             payload = TokenUtil.decode_token(access_token)
-            
+
             if not payload:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-            
-            user_id = payload.get('id')
-            
+                return Response(
+                    {"error": "Invalid access token."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            user_id = payload.get("id")
+
             if not user_id:
-                return JsonResponse({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
-            
+                return JsonResponse(
+                    {"error": "The refresh token is not associated with a user."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
             user = Student.objects.get(id=user_id)
-            
+
             print(user)
-            
-            return Response({'name': user.name, 'class_name': user.class_name, 'batch_year': user.batch_year, 'division': user.division}, status=status.HTTP_200_OK)
-        
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return Response(
+                {
+                    "name": user.name,
+                    "class_name": user.class_name,
+                    "batch_year": user.batch_year,
+                    "division": user.division,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except (
+            jwt.ExpiredSignatureError,
+            jwt.DecodeError,
+            ValueError,
+            Student.DoesNotExist,
+        ):
+            return Response(
+                {"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+
 class SendOTPPhone(APIView):
     def post(self, request):
         try:
-            phone_number = request.data.get('phone_number')
-    
+            phone_number = request.data.get("phone_number")
+
             print(phone_number)
             # Ensure the email_id is valid (you might want to add more validation)
             if not phone_number:
-                return Response({'message': 'Invalid phone number'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"message": "Invalid phone number"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
             else:
-                if str(phone_number) == '1234567890':
+                if str(phone_number) == "1234567890":
                     pass
-                elif str(phone_number)[0] == '+':
-                    return Response({'message': 'Invalid phone number, no \'+\' in first'}, status=status.HTTP_400_BAD_REQUEST)
+                elif str(phone_number)[0] == "+":
+                    return Response(
+                        {"message": "Invalid phone number, no '+' in first"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 elif len(str(phone_number)) != 10:
-                    return Response({'message': 'The number should have length of 10'}, status=status.HTTP_400_BAD_REQUEST)
-                elif ' ' in str(phone_number) or '-' in str(phone_number):
+                    return Response(
+                        {"message": "The number should have length of 10"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                elif " " in str(phone_number) or "-" in str(phone_number):
                     print(phone_number)
-                    return Response({'message': 'No spaces or \'-\' character in the phone number'}, status=status.HTTP_400_BAD_REQUEST)
-            
+                    return Response(
+                        {"message": "No spaces or '-' character in the phone number"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
             phone_number = int(phone_number)
             print(phone_number, type(phone_number))
             db_phone_number = Student.objects.filter(phone_no=phone_number).first()
-            
+
             if db_phone_number is not None:
                 if db_phone_number.restricted == False:
-                
-                    if str(db_phone_number.phone_no) != '1234567890':
+
+                    if str(db_phone_number.phone_no) != "1234567890":
                         # Generate a random OTP (6 digits)
                         try:
 
-                            otp_instance = OTP.objects.filter(credientials=phone_number).all()
-                            
+                            otp_instance = OTP.objects.filter(
+                                credientials=phone_number
+                            ).all()
+
                             if otp_instance:
                                 for otp in otp_instance:
                                     otp.delete()
-                            
-                            #otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-                            
-                            otp = '123456'
-                            
+
+                            # otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+
+                            otp = "123456"
+
                             OTP.objects.create(credientials=phone_number, code=otp)
-                            
+
                             # response = sendSMS(otp, phone_number)
                             # print("sended")
 
                             # # Check the response
                             # # if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                             # response_data = json.loads(response)
-                        
+
                             # return_value = response_data.get('return')
                             # if return_value == True:
-                            print(f'OTP sent successfully to {phone_number}')
-                            return Response({'message': 'OTP sent successfully'})
+                            print(f"OTP sent successfully to {phone_number}")
+                            return Response({"message": "OTP sent successfully"})
                             # else:
                             #     print('Failed to send OTP')
                             #     return Response({'message': 'Failed to send OTP'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-                            
+
                         except Exception as e:
                             print(e)
-                            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    else:           
-                        
-                        otp = '123456'
-                        
-                        otp_instance = OTP.objects.filter(credientials=phone_number).all()
-                            
+                            return Response(
+                                {"message": "Failed to send OTP"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            )
+                    else:
+
+                        otp = "123456"
+
+                        otp_instance = OTP.objects.filter(
+                            credientials=phone_number
+                        ).all()
+
                         if otp_instance:
                             for otps in otp_instance:
                                 otps.delete()
-                        
+
                         print(otp)
                         OTP.objects.create(credientials=phone_number, code=otp)
-                        
-                        return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
+
+                        return Response(
+                            {"message": "OTP sent successfully"},
+                            status=status.HTTP_200_OK,
+                        )
 
                 else:
-                    return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
+                    return Response(
+                        {"message": "User is restricted"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
             else:
-                return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"message": "User not found"}, status=status.HTTP_404_NOT_FOUND
+                )
         except Exception as e:
             print(e)
-            return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"message": "Failed to send OTP"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
 
 class SendOTPEmail(APIView):
     def post(self, request):
-        email_id = request.data.get('email')
-  
+        email_id = request.data.get("email")
+
         # Ensure the email_id is valid (you might want to add more validation)
         if not email_id:
-            return Response({'message': 'Invalid email id'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+            return Response(
+                {"message": "Invalid email id"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         print(email_id, type(email_id))
         db_email_id = Student.objects.filter(email_id__iexact=email_id).first()
-        
+
         if db_email_id is not None:
             if db_email_id.restricted == False:
 
-                if str(db_email_id.email_id) != 'test@gmail.com':
+                if str(db_email_id.email_id) != "test@gmail.com":
                     # Generate a random OTP (6 digits)
                     try:
 
                         otp_instance = OTP.objects.filter(credientials=email_id).all()
-                        
+
                         if otp_instance:
                             for otp in otp_instance:
                                 otp.delete()
-                        
-                        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-                        
+
+                        otp = "".join([str(random.randint(0, 9)) for _ in range(6)])
+
                         print(otp)
                         OTP.objects.create(credientials=email_id, code=otp)
-                        
-                        subject = 'OTP for Muthookas Ecube'
-        
-                        from_email = 'qmarktechnolabs@gmail.com'
-                        
+
+                        subject = "OTP for Muthookas Ecube"
+
+                        from_email = "qmarktechnolabs@gmail.com"
+
                         receipient = [email_id]
-                        html_message = render_to_string('otp_email.html', {'otp': otp ,'receipent_name' : db_email_id.name})
+                        html_message = render_to_string(
+                            "otp_email.html",
+                            {"otp": otp, "receipent_name": db_email_id.name},
+                        )
 
                         # Send the email with HTML content
-                        send_mail(subject, '', from_email, receipient, html_message=html_message)
+                        send_mail(
+                            subject,
+                            "",
+                            from_email,
+                            receipient,
+                            html_message=html_message,
+                        )
 
                         # Check the response
-                        #if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            
-                        print(f'OTP sent successfully to {email_id}')
-                        return Response({'message': 'OTP sent successfully'})
-                
+                        # if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+
+                        print(f"OTP sent successfully to {email_id}")
+                        return Response({"message": "OTP sent successfully"})
+
                     except Exception as e:
                         print(e)
-                        return Response({'message': 'Failed to send OTP'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                else:           
-                    
-                    otp = '123456'
-                    
+                        return Response(
+                            {"message": "Failed to send OTP"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        )
+                else:
+
+                    otp = "123456"
+
                     otp_instance = OTP.objects.filter(credientials=email_id).all()
-                        
+
                     if otp_instance:
                         for otps in otp_instance:
                             try:
@@ -189,104 +260,156 @@ class SendOTPEmail(APIView):
                             except Exception as e:
                                 print(e)
                                 pass
-                    
+
                     print(otp)
                     OTP.objects.create(credientials=email_id, code=otp)
-                    
-                    return Response({'message': 'OTP sent successfully'}, status=status.HTTP_200_OK)
-    
+
+                    return Response(
+                        {"message": "OTP sent successfully"}, status=status.HTTP_200_OK
+                    )
+
             else:
-                return Response({'message': 'User is restricted'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"message": "User is restricted"}, status=status.HTTP_404_NOT_FOUND
+                )
         else:
-            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-             
+            return Response(
+                {"message": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
 class VerifyOTP(APIView):
     def post(self, request):
         # Get the OTP entered by the user from the request data
-        entered_otp = request.data.get('otp')
-        phone_number = request.data.get('phone_number')
-        
+        entered_otp = request.data.get("otp")
+        phone_number = request.data.get("phone_number")
+
         try:
-            
+
             otp = OTP.objects.filter(credientials=phone_number).first()
-            
+
             if otp is None:
-                return Response({'message': 'OTP not found'}, status=status.HTTP_404_NOT_FOUND)
-            
+                return Response(
+                    {"message": "OTP not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+
             # Ensure both times are in the same timezone-aware format
             current_time = timezone.now()  # Get the current time in the same timezone
-            expiry_time = otp.expiry_time + timedelta(minutes=5)  # Add 5 minutes to expiry_time
-            
+            expiry_time = otp.expiry_time + timedelta(
+                minutes=5
+            )  # Add 5 minutes to expiry_time
+
             if expiry_time > current_time:
                 if entered_otp == str(otp.code):
-                
+
                     user = Student.objects.filter(phone_no=phone_number).first()
-                    
+
                     if user is None:
-                        return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-                    
+                        return Response(
+                            {"message": "User not found"},
+                            status=status.HTTP_404_NOT_FOUND,
+                        )
+
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
-                    
-                    otp.delete()  
 
-                    return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name, 'class_name': user.class_name, 'batch_year': user.batch_year, 'division': user.division}, status=status.HTTP_200_OK)
+                    otp.delete()
 
-                    
+                    return Response(
+                        {
+                            "access_token": access_token,
+                            "refresh_token": refresh_token,
+                            "name": user.name,
+                            "class_name": user.class_name,
+                            "batch_year": user.batch_year,
+                            "division": user.division,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
                 else:
-                    return Response({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {"message": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+                    )
 
             else:
                 otp.delete()
-                return Response({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
-            
+                return Response(
+                    {"message": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
         except OTP.DoesNotExist:
             # Session data for OTP not found
-            return Response({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Session data for OTP not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
 
 class VerifyOTPEmail(APIView):
     def post(self, request):
         # Get the OTP entered by the user from the request data
-        entered_otp = request.data.get('otp')
-        email_id = request.data.get('email')
-        
+        entered_otp = request.data.get("otp")
+        email_id = request.data.get("email")
+
         print(email_id)
         try:
-            
-            
+
             otp = OTP.objects.filter(credientials=email_id).first()
-            
-       
+
             if otp is None:
-                return Response({'message': 'OTP not found'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"message": "OTP not found"}, status=status.HTTP_404_NOT_FOUND
+                )
             # Ensure both times are in the same timezone-aware format
             current_time = timezone.now()  # Get the current time in the same timezone
-            expiry_time = otp.expiry_time + timedelta(minutes=5)  # Add 5 minutes to expiry_time
-            
+            expiry_time = otp.expiry_time + timedelta(
+                minutes=5
+            )  # Add 5 minutes to expiry_time
+
             if expiry_time > current_time:
                 if entered_otp == str(otp.code):
-                
+
                     user = Student.objects.filter(email_id__iexact=email_id).first()
-                    
+
                     if user is None:
-                        return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-                    
+                        return Response(
+                            {"message": "User not found"},
+                            status=status.HTTP_404_NOT_FOUND,
+                        )
+
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
-                    
-                    otp.delete()  
 
-                    return Response({'access_token': access_token, 'refresh_token': refresh_token, 'name': user.name, 'class_name': user.class_name, 'batch_year': user.batch_year, 'division': user.division}, status=status.HTTP_200_OK)
+                    otp.delete()
 
-                    
+                    return Response(
+                        {
+                            "access_token": access_token,
+                            "refresh_token": refresh_token,
+                            "name": user.name,
+                            "class_name": user.class_name,
+                            "batch_year": user.batch_year,
+                            "division": user.division,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
                 else:
-                    return Response({'message': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {"message": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+                    )
 
             else:
                 otp.delete()
-                return Response({'message': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
-            
+                return Response(
+                    {"message": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
         except OTP.DoesNotExist:
             # Session data for OTP not found
-            return Response({'message': 'Session data for OTP not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Session data for OTP not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class ValidateRefreshTokenView(APIView):
@@ -294,157 +417,232 @@ class ValidateRefreshTokenView(APIView):
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
         if not authorization_header:
-            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "Access token is missing."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         try:
             _, token = authorization_header.split()
-            
 
             payload = TokenUtil.is_refresh_token_expired(token=token)
-            
 
             # Optionally, you can extract user information or other claims from the payload
             if payload:
-                return Response({"error": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Invalid refresh token."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
             # Implement additional authorization logic here if needed
 
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
-            return Response({"error": "Invalid or expired access token."}, status=status.HTTP_401_UNAUTHORIZED)
+        except (
+            jwt.ExpiredSignatureError,
+            jwt.DecodeError,
+            ValueError,
+            Student.DoesNotExist,
+        ):
+            return Response(
+                {"error": "Invalid or expired access token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         # Access token is valid; you can proceed with request processing
-        return Response({"message": "Refresh token is valid.", "refresh_token": token}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Refresh token is valid.", "refresh_token": token},
+            status=status.HTTP_200_OK,
+        )
+
+
 class ValidateTokenView(APIView):
     def post(self, request):
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
         if not authorization_header:
-            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "Access token is missing."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         try:
             _, token = authorization_header.split()
-            
 
             payload = TokenUtil.is_token_expired(token)
-            
 
             # Optionally, you can extract user information or other claims from the payload
             if payload:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Invalid access token."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
             # Implement additional authorization logic here if needed
-            
-            return Response({"message": "Access token is valid.", "access_token": token}, status=status.HTTP_200_OK)
 
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
-            return Response({"error": "Invalid or expired access token."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"message": "Access token is valid.", "access_token": token},
+                status=status.HTTP_200_OK,
+            )
+
+        except (
+            jwt.ExpiredSignatureError,
+            jwt.DecodeError,
+            ValueError,
+            Student.DoesNotExist,
+        ):
+            return Response(
+                {"error": "Invalid or expired access token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
 
 class RequestAccessTokenWeb(APIView):
     def post(self, request):
         try:
             authorization_header = request.META.get("HTTP_AUTHORIZATION", b"")
-            
-            
+
             print(authorization_header)
             if not authorization_header:
-                return Response({"error": "Tokens is missing."}, status=status.HTTP_401_UNAUTHORIZED)
-            
-            _ , access_token = authorization_header.split()
+                return Response(
+                    {"error": "Tokens is missing."}, status=status.HTTP_401_UNAUTHORIZED
+                )
 
-            
+            _, access_token = authorization_header.split()
 
-            refresh_token = request.data.get('refresh_token')
-            
+            refresh_token = request.data.get("refresh_token")
 
-            
             refresh_token_valid = TokenUtil.is_refresh_token_expired(refresh_token)
-            
+
             if refresh_token_valid:
-                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Invalid refresh token or expired refresh token."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
             # Validate the refresh token
             refresh_token_payload = TokenUtil.decode_token(refresh_token)
-            
+
             if not refresh_token_payload:
-                return Response({'error': 'Unable to decode refresh code'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Unable to decode refresh code"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
             # Check if the refresh token is associated with a user (add your logic here)
-            user_id = refresh_token_payload.get('id')
-            
+            user_id = refresh_token_payload.get("id")
+
             if not user_id:
-                return Response({'error': 'The id key not found in token for the user.'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"error": "The id key not found in token for the user."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
             # Generate a new access token
             user = Student.objects.get(id=user_id)
-            
+
             access_token = TokenUtil.generate_access_token(user)
-            
-           
-            return Response({'access_token': access_token, 'message': 'new access token'}, status=status.HTTP_200_OK)
-        
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
+
+            return Response(
+                {"access_token": access_token, "message": "new access token"},
+                status=status.HTTP_200_OK,
+            )
+
+        except (
+            jwt.ExpiredSignatureError,
+            jwt.DecodeError,
+            ValueError,
+            Student.DoesNotExist,
+        ):
             print("error")
-            return Response({"error": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED)
-            
+            return Response(
+                {"error": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
         except Exception as e:
             print(e)
-            
-            return Response({'error': f'{e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+
+            return Response(
+                {"error": f"{e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class RequestAccessToken(APIView):
     def post(self, request):
         try:
             authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
             if not authorization_header:
-                return Response({"error": "Refresh token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
-            
+                return Response(
+                    {"error": "Refresh token is missing."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
             _, refresh_token = authorization_header.split()
-            
+
             print(refresh_token)
 
             refresh_token_valid = TokenUtil.is_refresh_token_expired(refresh_token)
-            
+
             if refresh_token_valid:
-                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Invalid refresh token or expired refresh token."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
             # Validate the refresh token
             refresh_token_payload = TokenUtil.decode_token(refresh_token)
-            
+
             if not refresh_token_payload:
-                return Response({'error': 'Unable to decode refresh code'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Unable to decode refresh code"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
             # Check if the refresh token is associated with a user (add your logic here)
-            user_id = refresh_token_payload.get('id')
-            
+            user_id = refresh_token_payload.get("id")
+
             if not user_id:
-                return Response({'error': 'The id key not found in token for the user.'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"error": "The id key not found in token for the user."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
             # Generate a new access token
             user = Student.objects.get(id=user_id)
-            
+
             access_token = TokenUtil.generate_access_token(user)
 
-                
-            return Response({'access_token': access_token}, status=status.HTTP_200_OK)
-            
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
+            return Response({"access_token": access_token}, status=status.HTTP_200_OK)
+
+        except (
+            jwt.ExpiredSignatureError,
+            jwt.DecodeError,
+            ValueError,
+            Student.DoesNotExist,
+        ):
             print("error")
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
-            
+            return Response(
+                {"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
         except Exception as e:
             print(e)
-            
-            return Response({'error': f'{e} hey'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+            return Response(
+                {"error": f"{e} hey"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class LogoutView(APIView):
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
     def post(self, request):
-       
+
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
         if not authorization_header:
-            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "Access token is missing."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         try:
             _, access_token = authorization_header.split()
@@ -453,29 +651,49 @@ class LogoutView(APIView):
 
             # Optionally, you can extract user information or other claims from the payload
             if not payload:
-                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"error": "Invalid access token."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
             # Check if the refresh token is associated with a user (add your logic here)
-            user_id = payload.get('id')
+            user_id = payload.get("id")
 
             if not user_id:
-                return JsonResponse({'error': 'The refresh token is not associated with a user.'}, status=401)
+                return JsonResponse(
+                    {"error": "The refresh token is not associated with a user."},
+                    status=401,
+                )
 
             # Generate a new access token
             user = Student.objects.get(id=user_id)
-            
+
             if not access_token:
-                return Response({'error': 'Access token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Access token is required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             if TokenUtil.is_token_valid(access_token):
 
-                user.device_id = ''
+                user.device_id = ""
                 user.save()
-                
-                return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
-            
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, ValueError, Student.DoesNotExist):
-            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
 
+                return Response(
+                    {"message": "Logout successful."}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"message": "Invalid access token or expired access token"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        except (
+            jwt.ExpiredSignatureError,
+            jwt.DecodeError,
+            ValueError,
+            Student.DoesNotExist,
+        ):
+            return Response(
+                {"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED
+            )

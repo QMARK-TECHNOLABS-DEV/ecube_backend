@@ -14,20 +14,21 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('register/admin/', include('apps.register_student.urls')),
-    path('client_auth/', include('apps.client_auth.urls')),
-    path('student_attendance/', include('apps.student_attendance.urls')),
-    path('student_exam_result/', include('apps.student_exam_result.urls')),
-    path('student_leaderboard/', include('apps.student_leaderboard.urls')),
-    path('class/updates/', include('apps.class_updates.urls')),
-    path('student_daily_activities/', include('apps.student_daily_activities.urls')),
-    path('student_dashboard/', include('apps.student_dashboard.urls')),
-    path('admin_auth/', include('apps.admin_auth.urls')),
-    path('class_management/', include('apps.class_management.urls')),
+    path("admin/", admin.site.urls),
+    path("register/admin/", include("apps.register_student.urls")),
+    path("client_auth/", include("apps.client_auth.urls")),
+    path("student_attendance/", include("apps.student_attendance.urls")),
+    path("student_exam_result/", include("apps.student_exam_result.urls")),
+    path("student_leaderboard/", include("apps.student_leaderboard.urls")),
+    path("class/updates/", include("apps.class_updates.urls")),
+    path("student_daily_activities/", include("apps.student_daily_activities.urls")),
+    path("student_dashboard/", include("apps.student_dashboard.urls")),
+    path("admin_auth/", include("apps.admin_auth.urls")),
+    path("class_management/", include("apps.class_management.urls")),
 ]

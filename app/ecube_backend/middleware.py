@@ -20,7 +20,9 @@ class BlockedUserMiddleware:
                 payload = TokenUtil.decode_token(token)
 
                 if not payload:
-                    return JsonResponse({"error": "Invalid or expired token."}, status=401)
+                    return JsonResponse(
+                        {"error": "Invalid or expired token."}, status=401
+                    )
 
                 user_type = payload.get("user_type")
                 user_id = payload.get("id")
@@ -36,7 +38,9 @@ class BlockedUserMiddleware:
                         return JsonResponse({"error": "User not found."}, status=404)
 
                     if user.restricted:
-                        return JsonResponse({"error": "You have been blocked."}, status=403)
+                        return JsonResponse(
+                            {"error": "You have been blocked."}, status=403
+                        )
 
             except Exception:
                 pass  # e removed
