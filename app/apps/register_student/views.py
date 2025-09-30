@@ -594,11 +594,14 @@ class StudentBulkMethods(APIView, CustomPageNumberPagination):
     
     def get(self, request):
         try:
-            batch_year = request.query_params.get('batch_year')
-            class_name = request.query_params.get('class_name')
-            division = request.query_params.get('division')
+            batch_year = str(request.query_params.get('batch_year', '')).strip()
+            class_name = str(request.query_params.get('class_name', '')).replace(" ", "")
+            division = str(request.query_params.get('division', '')).strip()
+            
+            print(batch_year, class_name, division)
+            class_details_instance = class_details.objects.get(batch_year=batch_year,class_name=class_name,division=division)
   
-            students = Student.objects.filter(batch_year=batch_year,class_name=class_name,division=division).order_by('name')
+            students = Student.objects.filter(class_group=class_details_instance.id).order_by('name')
             
             try:
                 students_result = self.paginate_queryset(students, request)
@@ -627,6 +630,8 @@ class GetAllStudents(APIView):
      def get(self, request):
         try:
             students = Student.objects.all()
+            
+            print("Hi there")
             serializer = StudentSerializer(students, many=True)
             
             if serializer.data == []:
